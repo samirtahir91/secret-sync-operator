@@ -8,7 +8,7 @@ Key features:
 - This allows for centralised secrets to by synced accross any tenant namespace, i.e. global credentials or certificates.
 - Deleting the `SecretSync` object will also delete the secrets it was managing.
 - The operator will reconcile secrets that are defined in the `SecretSync.spec.secrets` list only, when:
-    - Modifications are made to the secrets owned by the `SecretSync` object
+    - Modifications are made to the secrets owned by the `SecretSync` object (i.e. a user manually update or deletes a secret owned by the `SecretSync` object)
     - Modifications are made to the `SecretSync` object
 
 ## Example SecretSync object
