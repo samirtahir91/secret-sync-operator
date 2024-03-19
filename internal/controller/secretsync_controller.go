@@ -51,6 +51,14 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	l := log.FromContext(ctx)
 	l.Info("Enter Reconcile", "req", req)
 
+	// set status in SecretSync
+	status := "Unsynced"
+    // Update the status of the SecretSync resource
+    if err := r.updateSecretSyncStatus(ctx, req.NamespacedName, status); err != nil {
+        // Handle error if updating status fails
+        return ctrl.Result{}, err
+    }
+
 	// Read the source namespace from environment variable
 	sourceNamespace := os.Getenv("SOURCE_NAMESPACE")
 	if sourceNamespace == "" {
@@ -140,7 +148,35 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 
+    // If all operations succeed without errors, update status to synced
+    status = "Synced"
+    // Update the status of the SecretSync resource
+    if err := r.updateSecretSyncStatus(ctx, req.NamespacedName, status); err != nil {
+        // Handle error if updating status fails
+        return ctrl.Result{}, err
+    }
+
 	return ctrl.Result{}, nil
+}
+
+// updateSecretSyncStatus updates the status of the SecretSync resource.
+func (r *SecretSyncReconciler) updateSecretSyncStatus(ctx context.Context, namespacedName types.NamespacedName, status string) error {
+    secretSync := &syncv1.SecretSync{}
+    if err := r.Get(ctx, namespacedName, secretSync); err != nil {
+        // Handle error if getting SecretSync resource fails
+        return err
+    }
+    
+    // Update status field
+    secretSync.Status.Status = status
+    
+    // Update the SecretSync resource
+    if err := r.Update(ctx, secretSync); err != nil {
+        // Handle error if updating SecretSync resource fails
+        return err
+    }
+    
+    return nil
 }
 
 // Delete unreferenced secrets owned by the SecretSync object
