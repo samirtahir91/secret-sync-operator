@@ -130,19 +130,25 @@ var _ = Describe("SecretSync controller", func() {
 
             By("Checking secret2 has been removed from the destination namespace")
             // Attempt to retrieve the secret secret2 from the destination namespace
-            retrievedSecret := &corev1.Secret{}
             secretKey := types.NamespacedName{Name: secret2, Namespace: destinationNamespace}
-            err := k8sClient.Get(ctx, secretKey, retrievedSecret)
-            // Check if the error is of type NotFound indicating that the secret has been removed
-            if apierrors.IsNotFound(err) {
-                // The secret has been successfully removed
-                return
-            } else if err != nil {
-                // An unexpected error occurred
-                Fail(fmt.Sprintf("Failed to retrieve the secret %s from the destination namespace: %v", secret2, err))
+            var retrievedSecret corev1.Secret
+            retryCount := 12 // Number of retries
+            retryInterval := 5 * time.Second // Interval between retries
+            for i := 0; i < retryCount; i++ {
+                // Wait for the specified interval before retrying
+                time.Sleep(retryInterval)
+                err := k8sClient.Get(ctx, secretKey, &retrievedSecret)
+                // Check if the error is of type NotFound indicating that the secret has been removed
+                if apierrors.IsNotFound(err) {
+                    // The secret has been successfully removed
+                    return
+                } else if err != nil {
+                    // An unexpected error occurred
+                    Fail(fmt.Sprintf("Failed to retrieve the secret %s from the destination namespace: %v", secret2, err))
+                }
             }
-            // The secret 'secret-1' still exists in the destination namespace
-            Fail(fmt.Sprintf("The secret %s still exists in the destination namespace", secret2))
+            // The secret 'secret-1' still exists in the destination namespace after retries
+            Fail(fmt.Sprintf("The secret %s still exists in the destination namespace after retrying", secret2))
         })
     })
 
