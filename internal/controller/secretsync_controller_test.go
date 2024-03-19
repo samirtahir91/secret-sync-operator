@@ -33,10 +33,11 @@ var _ = Describe("SecretSync controller", func() {
 	const (
 		secretSyncName1 = "secret-sync-1"
 		secret1 = "secret-1"
-
+        secret1Array := [1]string{secret1}
 
 		secretSyncName2   = "secret-sync-2"
 		secret2 = "secret-2"
+        secret2Array := [1]string{secret2}
 
 		sourceNamespace = "default"
         destinationNamespace = "foo"
@@ -52,7 +53,7 @@ var _ = Describe("SecretSync controller", func() {
 					Namespace: destinationNamespace,
 				},
 				Spec: syncv1.SecretSyncSpec{
-					Name: [secret1],
+					Secrets: secret1Array,
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync1)).Should(Succeed())
