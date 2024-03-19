@@ -61,11 +61,11 @@ var _ = Describe("SecretSync controller", func() {
 					Namespace: destinationNamespace,
 				},
 				Spec: tutorialv1.SecretSyncSpec{
-					Secrets: ["secret1"],
+					Name: secret1,
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync1)).Should(Succeed())
-
+        
 			By("Creating another SecretSync custom resource")
 			secretSync2 := tutorialv1.SecretSync{
 				ObjectMeta: metav1.ObjectMeta{
@@ -73,7 +73,7 @@ var _ = Describe("SecretSync controller", func() {
 					Namespace: destinationNamespace,
 				},
 				Spec: tutorialv1.SecretSyncSpec{
-					Secrets: ["secret2"],
+					Name: secret2,
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync2)).Should(Succeed())
