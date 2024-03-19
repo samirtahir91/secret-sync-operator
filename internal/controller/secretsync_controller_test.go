@@ -187,4 +187,55 @@ var _ = Describe("SecretSync controller", func() {
             // At this point, the secret has been successfully recreated
         })
     })
+
+    Context("When modifying a secret owned by a SecretSync object in a destination namespace", func() {
+        It("Should trigger the reconciler to restore the secret to its original data", func() {
+            By("Modifying the data of secret1 in the destination namespace")
+            ctx := context.Background()
+            // Get the secret from the destination namespace
+            secretKey := types.NamespacedName{Name: secret1, Namespace: destinationNamespace}
+            retrievedSecret := &corev1.Secret{}
+            err := k8sClient.Get(ctx, secretKey, retrievedSecret)
+            if err != nil {
+                // An unexpected error occurred
+                Fail(fmt.Sprintf("Failed to retrieve the secret %s from the destination namespace: %v", secret1, err))
+                return
+            }
+    
+            // Make a copy of the original data
+            originalData := make(map[string][]byte, len(retrievedSecret.Data))
+            for k, v := range retrievedSecret.Data {
+                originalData[k] = v
+            }
+    
+            // Modify the data of the secret
+            retrievedSecret.Data["dummy-key"] = []byte("dummy-value")
+            err = k8sClient.Update(ctx, retrievedSecret)
+            if err != nil {
+                // Failed to update the secret
+                Fail(fmt.Sprintf("Failed to modify the data of secret %s in the destination namespace: %v", secret1, err))
+                return
+            }
+      
+            By("Waiting for the reconciler to restore the secret to its original data")
+            timeout := 120 * time.Second
+            interval := 10 * time.Second
+            Eventually(func() bool {
+                // Retrieve the secret again after reconciliation
+                err := k8sClient.Get(ctx, secretKey, retrievedSecret)
+                if err != nil {
+                    return false
+                }
+                // Check if the secret data has been restored to its original state
+                for k, v := range originalData {
+                    if _, ok := retrievedSecret.Data[k]; !ok || !bytes.Equal(v, retrievedSecret.Data[k]) {
+                        return false
+                    }
+                }
+                return true
+            }, timeout, interval).Should(BeTrue(), "Failed to restore the secret to its original data within timeout")
+            // At this point, the secret has been successfully restored to its original data
+        })
+    })
+    
 })
