@@ -146,8 +146,6 @@ var _ = Describe("SecretSync controller", func() {
                 err := k8sClient.Get(ctx, secretKey, retrievedSecret)
                 return apierrors.IsNotFound(err)
             }, timeout, interval).Should(BeTrue(), "Failed to delete the secret within timeout")
-            // The secret still exists in the destination namespace after retries
-            Fail(fmt.Sprintf("The secret %s still exists in the destination namespace after retrying", secret2))
         })
     })
 
@@ -178,8 +176,6 @@ var _ = Describe("SecretSync controller", func() {
                 err := k8sClient.Get(ctx, secretKey, retrievedSecret)
                 return apierrors.IsNotFound(err)
             }, timeout, interval).Should(BeTrue(), "Failed to delete the secret within timeout")
-            // The secret still exists in the destination namespace after retries
-            Fail(fmt.Sprintf("The secret %s still exists in the destination namespace after retrying", secret1))
 
             By("Waiting for the secret to be re-created")
             timeout = 120 * time.Second
