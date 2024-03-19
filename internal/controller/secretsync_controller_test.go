@@ -42,6 +42,7 @@ var _ = Describe("SecretSync controller", func() {
 		secret1 = "secret-1"
 		sourceNamespace = "default"
         destinationNamespace = "foo"
+        timeout = 60 * time.Second
 	)
 
 	Context("When setting up the test environment", func() {
