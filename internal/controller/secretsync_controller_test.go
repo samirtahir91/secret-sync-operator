@@ -122,7 +122,11 @@ var _ = Describe("SecretSync controller", func() {
             secretKey := types.NamespacedName{Name: secret2, Namespace: destinationNamespace}
             retrievedSecret:= &corev1.Secret{}
             err := k8sClient.Get(ctx, secretKey, retrievedSecret)
-
+            if err != nil {
+                // An unexpected error occurred
+                Fail(fmt.Sprintf("Failed to retrieve the secret %s from the destination namespace: %v", secret2, err))
+                return
+            }
             By("Removing a secret from a SecretSync objects spec.secrets")
             // Retrieve the SecretSync object to check its status
             key := types.NamespacedName{Name: secretSyncName1, Namespace: destinationNamespace}
