@@ -53,6 +53,18 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	l := log.FromContext(ctx)
 	l.Info("Enter Reconcile", "req", req)
 
+	// Fetch the SecretSync instance
+	secretSync := &syncv1.SecretSync{}
+	err := r.Get(ctx, req.NamespacedName, secretSync)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			l.Info("SecretSync resource not found. Ignoring since object must be deleted.")
+			return ctrl.Result{}, nil
+		}
+		l.Error(err, "Failed to get SecretSync")
+		return ctrl.Result{}, err
+	}
+
 	// Update syncStatus status
 	syncStatus := false
 	secretSync.Status.Synced = syncStatus
@@ -68,18 +80,6 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if sourceNamespace == "" {
 		// Handle case where environment variable is not set
 		return ctrl.Result{}, errors.New("SOURCE_NAMESPACE environment variable not set")
-	}
-	
-	// Fetch the SecretSync instance
-	secretSync := &syncv1.SecretSync{}
-	err := r.Get(ctx, req.NamespacedName, secretSync)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			l.Info("SecretSync resource not found. Ignoring since object must be deleted.")
-			return ctrl.Result{}, nil
-		}
-		l.Error(err, "Failed to get SecretSync")
-		return ctrl.Result{}, err
 	}
 
     // Call the function to delete unreferenced secrets
