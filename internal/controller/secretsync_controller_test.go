@@ -52,10 +52,6 @@ var _ = BeforeSuite(func() {
 
     k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
         Scheme: scheme.Scheme,
-        // Disable metrics for tests
-        // MetricsBindAddress: "0",
-        // Instead, set MetricsBindAddress to empty string
-        MetricsBindAddress: "",
     })
     
 	Expect(err).ToNot(HaveOccurred())
