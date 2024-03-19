@@ -114,41 +114,81 @@ var _ = Describe("SecretSync controller", func() {
 		})
 	})
 
-    Context("When deleting a secret owned by a SecretSync object", func() {
+    Context("When removing a secret from a SecretSync objects spec.secrets", func() {
         It("Should delete the secret in the destination namespace", func() {
-            By("Removing a secret from a SecretSync object")
+            By("Getting secret2 from the destination namespace")
             ctx := context.Background()
+            // Attempt to retrieve the secret secret2 from the destination namespace
+            secretKey := types.NamespacedName{Name: secret2, Namespace: destinationNamespace}
+            retrievedSecret:= &corev1.Secret{}
+            if err != nil {
+                // An unexpected error occurred
+                Fail(fmt.Sprintf("Failed to retrieve the secret %s from the destination namespace: %v", secret2, err))
+                return
+            }
+
+            By("Removing a secret from a SecretSync objects spec.secrets")
             // Retrieve the SecretSync object to check its status
             key := types.NamespacedName{Name: secretSyncName1, Namespace: destinationNamespace}
             retrievedSecretSync := &syncv1.SecretSync{}
             // Retrieve the SecretSync object from the Kubernetes API server
             Expect(k8sClient.Get(ctx, key, retrievedSecretSync)).Should(Succeed())
-                // Modify the SecretSync object
+            // Modify the SecretSync objects spec.secrets
             retrievedSecretSync.Spec.Secrets = deletedSecret1Array[:]
-                // Update the SecretSync object with the modified fields
+            // Update the SecretSync object with the modified fields
             Expect(k8sClient.Update(ctx, retrievedSecretSync)).Should(Succeed())
 
             By("Checking secret2 has been removed from the destination namespace")
-            // Attempt to retrieve the secret secret2 from the destination namespace
-            secretKey := types.NamespacedName{Name: secret2, Namespace: destinationNamespace}
-            var retrievedSecret corev1.Secret
-            retryCount := 12 // Number of retries
-            retryInterval := 5 * time.Second // Interval between retries
-            for i := 0; i < retryCount; i++ {
-                // Wait for the specified interval before retrying
-                time.Sleep(retryInterval)
-                err := k8sClient.Get(ctx, secretKey, &retrievedSecret)
-                // Check if the error is of type NotFound indicating that the secret has been removed
-                if apierrors.IsNotFound(err) {
-                    // The secret has been successfully removed
-                    return
-                } else if err != nil {
-                    // An unexpected error occurred
-                    Fail(fmt.Sprintf("Failed to retrieve the secret %s from the destination namespace: %v", secret2, err))
-                }
-            }
-            // The secret 'secret-1' still exists in the destination namespace after retries
+            // Ensure the secret is deleted
+            timeout := 60 * time.Second
+            interval := 5 * time.Second
+            Eventually(func() bool {
+                err := k8sClient.Get(ctx, secretKey, retrievedSecret)
+                return apierrors.IsNotFound(err)
+            }, timeout, interval).Should(BeTrue(), "Failed to delete the secret within timeout")
+            // The secret still exists in the destination namespace after retries
             Fail(fmt.Sprintf("The secret %s still exists in the destination namespace after retrying", secret2))
+        })
+    })
+
+    Context("When deleting a secret owned by a SecretSync object in a destination namespace", func() {
+        It("Should trigger the reconiler to re-create the secret in the destination namespace", func() {
+            By("Removing a secret from the destination namespace")
+            ctx := context.Background()
+            // Get the secret from the destination namespace
+            secretKey := types.NamespacedName{Name: secret1, Namespace: destinationNamespace}
+            retrievedSecret := &corev1.Secret{}
+            err := k8sClient.Get(ctx, secretKey, retrievedSecret)
+            if err != nil {
+                // An unexpected error occurred
+                Fail(fmt.Sprintf("Failed to retrieve the secret %s from the destination namespace: %v", secret1, err))
+                return
+            }
+            // Delete the secret
+            err = k8sClient.Delete(ctx, retrievedSecret)
+            if err != nil {
+                // Failed to delete the secret
+                Fail(fmt.Sprintf("Failed to delete the secret %s from the destination namespace: %v", secret1, err))
+                return
+            }
+            // Ensure the secret is deleted
+            timeout := 120 * time.Second
+            interval := 3 * time.Second
+            Eventually(func() bool {
+                err := k8sClient.Get(ctx, secretKey, retrievedSecret)
+                return apierrors.IsNotFound(err)
+            }, timeout, interval).Should(BeTrue(), "Failed to delete the secret within timeout")
+            // The secret still exists in the destination namespace after retries
+            Fail(fmt.Sprintf("The secret %s still exists in the destination namespace after retrying", secret1))
+
+            By("Waiting for the secret to be re-created")
+            timeout = 120 * time.Second
+            interval = 10 * time.Second
+            Eventually(func() bool {
+                err := k8sClient.Get(ctx, secretKey, retrievedSecret)
+                return err == nil
+            }, timeout, interval).Should(BeTrue(), "Failed to recreate the secret within timeout")
+            // At this point, the secret has been successfully recreated
         })
     })
 
