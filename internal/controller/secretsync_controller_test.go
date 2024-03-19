@@ -19,6 +19,8 @@ import (
 	syncv1 "secret-sync-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+    "k8s.io/client-go/rest"
+
 )
 
 var (
