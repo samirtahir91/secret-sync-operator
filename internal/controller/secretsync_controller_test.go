@@ -33,11 +33,11 @@ var _ = Describe("SecretSync controller", func() {
 	const (
 		secretSyncName1 = "secret-sync-1"
 		secret1 = "secret-1"
-        secret1Array := [1]string{secret1}
+        secret1Array = [1]string{"secret-1"}
 
 		secretSyncName2   = "secret-sync-2"
 		secret2 = "secret-2"
-        secret2Array := [1]string{secret2}
+        secret2Array = [1]string{"secret-2"}
 
 		sourceNamespace = "default"
         destinationNamespace = "foo"
