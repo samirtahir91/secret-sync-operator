@@ -70,6 +70,7 @@ var _ = Describe("SecretSync controller", func() {
 					Name:      secret1,
 					Namespace: sourceNamespace,
 				},
+                Data: map[string][]byte{"user": []byte("Zm9vcw==")},
 			}
 			Expect(k8sClient.Create(ctx, &secret1Obj)).Should(Succeed())
 
@@ -204,23 +205,22 @@ var _ = Describe("SecretSync controller", func() {
             }
     
             // Make a copy of the original data
-            originalData := make(map[string][]byte, len(retrievedSecret.Data))
-            for k, v := range retrievedSecret.Data {
-                originalData[k] = v
-            }
+            originalData := make([]byte, len(retrievedSecret.Data))
+            copy(originalData, retrievedSecret.Data)
     
             // Modify the data of the secret
-            retrievedSecret.Data["dummy-key"] = []byte("dummy-value")
+            modifiedData := map[string][]byte{"user": []byte("YmFycw==")}
+            retrievedSecret.Data = modifiedData
             err = k8sClient.Update(ctx, retrievedSecret)
             if err != nil {
                 // Failed to update the secret
                 Fail(fmt.Sprintf("Failed to modify the data of secret %s in the destination namespace: %v", secret1, err))
                 return
             }
-      
+       
             By("Waiting for the reconciler to restore the secret to its original data")
             timeout := 120 * time.Second
-            interval := 10 * time.Second
+            interval := 5 * time.Second
             Eventually(func() bool {
                 // Retrieve the secret again after reconciliation
                 err := k8sClient.Get(ctx, secretKey, retrievedSecret)
@@ -228,15 +228,11 @@ var _ = Describe("SecretSync controller", func() {
                     return false
                 }
                 // Check if the secret data has been restored to its original state
-                for k, v := range originalData {
-                    if _, ok := retrievedSecret.Data[k]; !ok || !bytes.Equal(v, retrievedSecret.Data[k]) {
-                        return false
-                    }
-                }
-                return true
+                return reflect.DeepEqual(originalData, retrievedSecret.Data)
             }, timeout, interval).Should(BeTrue(), "Failed to restore the secret to its original data within timeout")
             // At this point, the secret has been successfully restored to its original data
         })
     })
+    
     
 })
