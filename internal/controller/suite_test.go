@@ -28,8 +28,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/setup"
 
 	// Import your controller package
 	"secret-sync-operator/controllers"
