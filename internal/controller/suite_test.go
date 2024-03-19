@@ -17,74 +17,95 @@ limitations under the License.
 package controller
 
 import (
-	"fmt"
-	"path/filepath"
-	"runtime"
+	"context"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/setup"
 
+	// Import your controller package
+	"secret-sync-operator/controllers"
 	syncv1 "secret-sync-operator/api/v1"
-	//+kubebuilder:scaffold:imports
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// These tests use Ginkgo (BDD-style Go testing framework). Refer to
-// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
+var _ = Describe("SecretSync controller", func() {
+	var (
+		// Define objects needed for the tests
+		ctx    context.Context
+		cli    client.Client
+		scheme *runtime.Scheme
+		log    = log.NullLogger{}
+	)
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
+	BeforeEach(func() {
+		// Setup TestEnv
+		ctx = context.Background()
+		scheme = runtime.NewScheme()
+		Expect(corev1.AddToScheme(scheme)).To(Succeed())
 
-func TestControllers(t *testing.T) {
+		// Create a fake client
+		cli = fake.NewClientBuilder().WithScheme(scheme).Build()
+	})
+
+	Context("Reconcile", func() {
+		It("should create destination secret", func() {
+			// Define a SecretSync object
+			secretSync := &syncv1.SecretSync{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-secret-sync",
+					Namespace: "default",
+				},
+				Spec: syncv1.SecretSyncSpec{
+					Secrets: []string{"test-secret"},
+				},
+			}
+			Expect(cli.Create(ctx, secretSync)).To(Succeed())
+
+			// Define a source secret
+			sourceSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-secret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{"key": []byte("value")},
+			}
+			Expect(cli.Create(ctx, sourceSecret)).To(Succeed())
+
+			// Create a controller and reconcile
+			controller := &controllers.SecretSyncReconciler{
+				Client: cli,
+				Scheme: scheme,
+			}
+			Expect(controller.Reconcile(ctx, reconcile.Request{
+				NamespacedName: client.ObjectKeyFromObject(secretSync),
+			})).To(Succeed())
+
+			// Verify destination secret is created
+			destinationSecret := &corev1.Secret{}
+			Expect(cli.Get(ctx, client.ObjectKey{Name: "test-secret", Namespace: "default"}, destinationSecret)).To(Succeed())
+			Expect(destinationSecret.Data).To(Equal(map[string][]byte{"key": []byte("value")}))
+		})
+	})
+
+	AfterEach(func() {
+		By("tearing down the test environment")
+		err := testEnv.Stop()
+		Expect(err).NotTo(HaveOccurred())		// Clean up resources
+	})
+
+})
+
+func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-
 	RunSpecs(t, "Controller Suite")
 }
-
-var _ = BeforeSuite(func() {
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
-
-	By("bootstrapping test environment")
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
-		ErrorIfCRDPathMissing: true,
-
-		// The BinaryAssetsDirectory is only required if you want to run the tests directly
-		// without call the makefile target test. If not informed it will look for the
-		// default path defined in controller-runtime which is /usr/local/kubebuilder/.
-		// Note that you must have the required binaries setup under the bin directory to perform
-		// the tests directly. When we run make test it will be setup and used automatically.
-		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
-			fmt.Sprintf("1.28.3-%s-%s", runtime.GOOS, runtime.GOARCH)),
-	}
-
-	var err error
-	// cfg is defined in this file globally.
-	cfg, err = testEnv.Start()
-	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
-
-	err = syncv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	//+kubebuilder:scaffold:scheme
-
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
-
-})
-
-var _ = AfterSuite(func() {
-	By("tearing down the test environment")
-	err := testEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
-})
