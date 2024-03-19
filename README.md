@@ -1,8 +1,30 @@
 # secret-sync-operator
-// TODO(user): Add simple overview of use/purpose
+This is a Kubernetes operator that will sync secrets from a defined source namespace to any number of destination namespaces.
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+Key features:
+- Uses a custom resource `SecretSync` in your destination namespace.
+- Reads secrets defined in a `SecretSync` resource and fetches from a source namespace - configured in the controller deployment env spec `SOURCE_NAMESPACE`.
+- This allows for centralised secrets to by synced accross any tenant namespace, i.e. global credentials or certificates.
+- Deleting the `SecretSync` object will also delete the secrets it was managing.
+- The operator will reconcile secrets that are defined in the `SecretSync.spec.secrets` list only, when:
+    - Modifications are made to the secrets owned by the `SecretSync` object
+    - Modifications are made to the `SecretSync` object
+
+## Example SecretSync object
+```
+kubectl apply -f - <<EOF
+apiVersion: sync.samir.io/v1
+kind: SecretSync
+metadata:
+  name: secretsync-sample
+  namespace: samir
+spec:
+  secrets:
+    - secret1
+    - secret2
+EOF
+```
 
 ## Getting Started
 
@@ -19,10 +41,6 @@
 make docker-build docker-push IMG=<some-registry>/secret-sync-operator:tag
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified. 
-And it is required to have access to pull the image from the working environment. 
-Make sure you have the proper permission to the registry if the above commands don’t work.
-
 **Install the CRDs into the cluster:**
 
 ```sh
@@ -35,17 +53,12 @@ make install
 make deploy IMG=<some-registry>/secret-sync-operator:tag
 ```
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin 
-privileges or be logged in as admin.
-
 **Create instances of your solution**
 You can apply the samples (examples) from the config/sample:
 
 ```sh
 kubectl apply -k config/samples/
 ```
-
->**NOTE**: Ensure that the samples has default values to test it out.
 
 ### To Uninstall
 **Delete the instances (CRs) from the cluster:**
@@ -65,9 +78,6 @@ make uninstall
 ```sh
 make undeploy
 ```
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
 
 **NOTE:** Run `make --help` for more information on all potential `make` targets
 
