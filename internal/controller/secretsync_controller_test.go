@@ -92,8 +92,8 @@ var _ = Describe("SecretSync controller", func() {
 		})
 	})
 
-	Context("When reconciling a secretSync", func() {
-		It("Should sync the secrets and set the secretSync status to true", func() {
+	Context("When reconciling a SecretSync", func() {
+		It("Should sync the secrets and set the SecretSync status to true", func() {
             By("Checking if the SecretSync status has changed to the right status")
             ctx := context.Background()
             // Retrieve the SecretSync object to check its status
@@ -111,21 +111,35 @@ var _ = Describe("SecretSync controller", func() {
 		})
 	})
 
-    Context("When deleting a secret owned by a secreSync object", func() {
+    Context("When deleting a secret owned by a SecretSync object", func() {
         It("Should delete the secret in the destination namespace", func() {
-            By("Checking if the secret has been deleted from the destination namespace")
+            By("Removing a secret from a SecretSync object")
             ctx := context.Background()
             // Retrieve the SecretSync object to check its status
             key := types.NamespacedName{Name: secretSyncName1, Namespace: destinationNamespace}
             retrievedSecretSync := &syncv1.SecretSync{}
             // Retrieve the SecretSync object from the Kubernetes API server
             Expect(k8sClient.Get(ctx, key, retrievedSecretSync)).Should(Succeed())
-    
-            // Modify the SecretSync object
+                // Modify the SecretSync object
             retrievedSecretSync.Spec.Secrets = deletedSecret1Array[:]
-    
-            // Update the SecretSync object with the modified fields
+                // Update the SecretSync object with the modified fields
             Expect(k8sClient.Update(ctx, retrievedSecretSync)).Should(Succeed())
+
+            By("Checking secret2 has been removed from the destination namespace")
+            // Attempt to retrieve the secret secret2 from the destination namespace
+            retrievedSecret := &corev1.Secret{}
+            secretKey := types.NamespacedName{Name: secret2, Namespace: destinationNamespace}
+            err := k8sClient.Get(ctx, secretKey, retrievedSecret)
+            // Check if the error is of type NotFound indicating that the secret has been removed
+            if apierrors.IsNotFound(err) {
+                // The secret has been successfully removed
+                return
+            } else if err != nil {
+                // An unexpected error occurred
+                Fail(fmt.Sprintf("Failed to retrieve the secret %s from the destination namespace: %v", secret2, err))
+            }
+            // The secret 'secret-1' still exists in the destination namespace
+            Fail(fmt.Sprintf("The secret %s still exists in the destination namespace", secret2))
         })
     })
 
