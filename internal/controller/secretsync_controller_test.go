@@ -60,22 +60,22 @@ var _ = Describe("SecretSync controller", func() {
 			Expect(k8sClient.Create(ctx, ns)).Should(Succeed())
 
             By("Creating the secret-1 in the sourceNamespace")
-			secret := corev1.Secret{
+			secret1Obj := corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secret1,
 					Namespace: sourceNamespace,
 				},
 			}
-			Expect(k8sClient.Create(ctx, &secret)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, &secret1Obj)).Should(Succeed())
 
             By("Creating the secret-2 in the sourceNamespace")
-			secret := corev1.Secret{
+			secret2Obj := corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secret2,
 					Namespace: sourceNamespace,
 				},
 			}
-			Expect(k8sClient.Create(ctx, &secret)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, &secret2Obj)).Should(Succeed())
 
 			By("Creating a first SecretSync custom resource in the destinationNamespace")
 			secretSync1 := syncv1.SecretSync{
