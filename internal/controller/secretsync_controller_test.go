@@ -17,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	syncv1 "secret-sync-operator/api/v1"
-	"secret-sync-operator/controllers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
