@@ -52,7 +52,7 @@ var _ = Describe("SecretSync controller", func() {
 					Namespace: destinationNamespace,
 				},
 				Spec: syncv1.SecretSyncSpec{
-					Secrets: [secret1],
+					Name: [secret1],
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync1)).Should(Succeed())
