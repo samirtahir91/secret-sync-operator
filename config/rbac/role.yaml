@@ -28,3 +28,17 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - sync.samir.io
+  resources:
+  - secretsyncs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - sync.samir.io
+  resources:
+  - secretsyncs/status
+  verbs:
+  - get
+  - patch
+  - update
