@@ -64,16 +64,6 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	// Update syncStatus status
-	syncStatus := false
-	secretSync.Status.Synced = syncStatus
-	if err := r.Status().Update(ctx, secretSync); err != nil {
-		l.Error(err, "Unable to update secretSync's status", "status", syncStatus)
-		return ctrl.Result{}, err
-	} else {
-		l.Info("secretSync's status updated", "status", syncStatus)
-	}
-
 	// Read the source namespace from environment variable
 	//sourceNamespace := os.Getenv("SOURCE_NAMESPACE")
 	//if sourceNamespace == "" {
@@ -155,7 +145,13 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Update syncStatus status
 	syncStatus = true
 	secretSync.Status.Synced = syncStatus
+	// Update the status of the SecretSync resource with optimistic locking
 	if err := r.Status().Update(ctx, secretSync); err != nil {
+		// Handle conflict error due to outdated version
+		if apierrors.IsConflict(err) {
+			l.Info("Conflict: SecretSync resource has been modified, retrying...")
+			return ctrl.Result{Requeue: true}, nil // Requeue reconciliation
+		}
 		l.Error(err, "Unable to update secretSync's status", "status", syncStatus)
 		return ctrl.Result{}, err
 	} else {
