@@ -42,7 +42,6 @@ var _ = Describe("SecretSync controller", func() {
 		secret1 = "secret-1"
 		sourceNamespace = "default"
         destinationNamespace = "foo"
-        timeout = 60 * time.Second
 	)
 
 	Context("When setting up the test environment", func() {
@@ -84,6 +83,8 @@ var _ = Describe("SecretSync controller", func() {
             // Retrieve the SecretSync object to check its status
             key := types.NamespacedName{Name: secretSyncName1, Namespace: destinationNamespace}
             retrievedSecretSync := &syncv1.SecretSync{}
+            timeout := 60 * time.Second
+            interval := 5 * time.Second
             Eventually(func() bool {
                 if err := k8sClient.Get(ctx, key, retrievedSecretSync); err != nil {
                     return false
