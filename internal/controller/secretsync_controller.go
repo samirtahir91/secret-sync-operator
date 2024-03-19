@@ -68,11 +68,11 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Update syncStatus status
 	syncStatus := false
 	secretSync.Status.Synced = syncStatus
-	if err := r.Status().Update(ctx, &secretSync); err != nil {
-		log.Error(err, "Unable to update secretSync's status", "status", syncStatus)
+	if err := r.Status().Update(ctx, secretSync); err != nil {
+		l.Error(err, "Unable to update secretSync's status", "status", syncStatus)
 		return ctrl.Result{}, err
 	} else {
-		log.Info("secretSync's status updated", "status", syncStatus)
+		l.Info("secretSync's status updated", "status", syncStatus)
 	}
 
 	// Read the source namespace from environment variable
@@ -155,34 +155,14 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Update syncStatus status
 	syncStatus = true
 	secretSync.Status.Synced = syncStatus
-	if err := r.Status().Update(ctx, &secretSync); err != nil {
-		log.Error(err, "Unable to update secretSync's status", "status", syncStatus)
+	if err := r.Status().Update(ctx, secretSync); err != nil {
+		l.Error(err, "Unable to update secretSync's status", "status", syncStatus)
 		return ctrl.Result{}, err
 	} else {
-		log.Info("secretSync's status updated", "status", syncStatus)
+		l.Info("secretSync's status updated", "status", syncStatus)
 	}
 
 	return ctrl.Result{}, nil
-}
-
-// updateSecretSyncStatus updates the status of the SecretSync resource.
-func (r *SecretSyncReconciler) updateSecretSyncStatus(ctx context.Context, namespacedName types.NamespacedName, status bool) error {
-    secretSync := &syncv1.SecretSync{}
-    if err := r.Get(ctx, namespacedName, secretSync); err != nil {
-        // Handle error if getting SecretSync resource fails
-        return err
-    }
-    
-    // Update status field
-    secretSync.Status.Synced = status
-    
-    // Update the SecretSync resource
-    if err := r.Update(ctx, secretSync); err != nil {
-        // Handle error if updating SecretSync resource fails
-        return err
-    }
-    
-    return nil
 }
 
 // Delete unreferenced secrets owned by the SecretSync object
