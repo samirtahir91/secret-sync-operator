@@ -162,7 +162,7 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 // updateSecretSyncStatus updates the status of the SecretSync resource.
-func (r *SecretSyncReconciler) updateSecretSyncStatus(ctx context.Context, namespacedName types.NamespacedName, status string) error {
+func (r *SecretSyncReconciler) updateSecretSyncStatus(ctx context.Context, namespacedName types.NamespacedName, status bool) error {
     secretSync := &syncv1.SecretSync{}
     if err := r.Get(ctx, namespacedName, secretSync); err != nil {
         // Handle error if getting SecretSync resource fails
