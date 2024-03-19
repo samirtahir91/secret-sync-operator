@@ -54,7 +54,7 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	l.Info("Enter Reconcile", "req", req)
 
 	// set status in SecretSync
-	status := "Unsynced"
+	status := false
     // Update the status of the SecretSync resource
     if err := r.updateSecretSyncStatus(ctx, req.NamespacedName, status); err != nil {
         // Handle error if updating status fails
@@ -151,7 +151,7 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
     // If all operations succeed without errors, update status to synced
-    status = "Synced"
+    status = true
     // Update the status of the SecretSync resource
     if err := r.updateSecretSyncStatus(ctx, req.NamespacedName, status); err != nil {
         // Handle error if updating status fails
