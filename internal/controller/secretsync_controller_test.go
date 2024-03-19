@@ -50,10 +50,14 @@ var _ = BeforeSuite(func() {
 
 	ctx, cancel = context.WithCancel(context.Background())
 
-	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:             scheme.Scheme,
-		MetricsBindAddress: "0", // Disable metrics for tests
-	})
+    k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+        Scheme: scheme.Scheme,
+        // Disable metrics for tests
+        // MetricsBindAddress: "0",
+        // Instead, set MetricsBindAddress to empty string
+        MetricsBindAddress: "",
+    })
+    
 	Expect(err).ToNot(HaveOccurred())
 
 	reconciler := &controllers.SecretSyncReconciler{
