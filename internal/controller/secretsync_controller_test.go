@@ -205,8 +205,7 @@ var _ = Describe("SecretSync controller", func() {
             }
     
             // Make a copy of the original data
-            originalData := make([]byte, len(retrievedSecret.Data))
-            copy(originalData, retrievedSecret.Data)
+            originalData := retrievedSecret.Data
     
             // Modify the data of the secret
             modifiedData := map[string][]byte{"user": []byte("YmFycw==")}
