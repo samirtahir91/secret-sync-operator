@@ -61,7 +61,7 @@ var _ = Describe("SecretSync controller", func() {
 					Namespace: destinationNamespace,
 				},
 				Spec: tutorialv1.SecretSyncSpec{
-					Secrets: [secret1],
+					Secrets: ["secret1"],
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync1)).Should(Succeed())
@@ -73,7 +73,7 @@ var _ = Describe("SecretSync controller", func() {
 					Namespace: destinationNamespace,
 				},
 				Spec: tutorialv1.SecretSyncSpec{
-					Secrets: [secret2],
+					Secrets: ["secret2"],
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync2)).Should(Succeed())
