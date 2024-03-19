@@ -24,8 +24,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/apimachinery/pkg/types"
-	//syncv1 "secret-sync-operator/api/v1"
+	"k8s.io/apimachinery/pkg/types"
+	syncv1 "secret-sync-operator/api/v1"
 )
 
 var _ = Describe("SecretSync controller", func() {
@@ -44,17 +44,18 @@ var _ = Describe("SecretSync controller", func() {
 
 	Context("When setting up the test environment", func() {
 		It("Should create SecretSync custom resources", func() {
-			By("Creating the secret")
-			ctx := context.Background()
-            secret := corev1.Secret{
+			By("Creating a first SecretSync custom resource")
+            ctx := context.Background()
+			secretSync1 := syncv1.SecretSync{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      secret1,
-					Namespace: sourceNamespace,
+					Name:      secretSyncName1,
+					Namespace: destinationNamespace,
+				},
+				Spec: syncv1.SecretSyncSpec{
+					Secrets: [secret1],
 				},
 			}
-			Expect(k8sClient.Create(ctx, &secret)).Should(Succeed())
-
-
+			Expect(k8sClient.Create(ctx, &secretSync1)).Should(Succeed())
 		})
 	})
 })
