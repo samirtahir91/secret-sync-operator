@@ -40,7 +40,7 @@ var _ = Describe("SecretSync controller", func() {
 	const (
 		secretSyncName1 = "secret-sync-1"
 		secret1 = "secret-1"
-        secret1 = "secret-2"
+        secret2 = "secret-2"
 		sourceNamespace = "default"
         destinationNamespace = "foo"
 	)
