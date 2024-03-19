@@ -46,7 +46,7 @@ var _ = Describe("SecretSync controller", func() {
 	)
 
 	Context("When setting up the test environment", func() {
-		It("Should create SecretSync custom resources and sync the secrets", func() {
+		It("Should create SecretSync custom resources", func() {
 			By("Setting the SOURCE_NAMESPACE environment variable")
 			os.Setenv("SOURCE_NAMESPACE", sourceNamespace)
 
@@ -88,8 +88,13 @@ var _ = Describe("SecretSync controller", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync1)).Should(Succeed())
+		})
+	})
 
+	Context("When reconciling a secretSync", func() {
+		It("Should sync the secrets and set the secretSync status to true", func() {
             By("Checking if the SecretSync status has changed to the right status")
+            ctx := context.Background()
             // Retrieve the SecretSync object to check its status
             key := types.NamespacedName{Name: secretSyncName1, Namespace: destinationNamespace}
             retrievedSecretSync := &syncv1.SecretSync{}
