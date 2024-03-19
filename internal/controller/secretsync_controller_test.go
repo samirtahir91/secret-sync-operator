@@ -100,7 +100,7 @@ var _ = Describe("SecretSync controller", func() {
                     return false
                 }
                 // Check if the Secrets field matches the expected value
-                return reflect.DeepEqual(retrievedSecretSync.Status.Status, "Synced")
+                return reflect.DeepEqual(retrievedSecretSync.Status.Synced, true)
             }, timeout, interval).Should(BeTrue(), "SecretSync status didn't change to the right status")
 		})
 	})
