@@ -42,7 +42,10 @@ var _ = Describe("SecretSync controller", func() {
 	)
 
 	Context("When setting up the test environment", func() {
-		It("Should create SecretSync custom resources", func() {
+		It("Should create SecretSync custom resources and sync the secrets", func() {
+			By("Setting the SOURCE_NAMESPACE environment variable")
+			os.Setenv("SOURCE_NAMESPACE", sourceNamespace)
+
 			By("Creating a namespace for the destinationNamespace")
 			ctx := context.Background()
 			ns := &corev1.Namespace{
@@ -52,7 +55,7 @@ var _ = Describe("SecretSync controller", func() {
 			}
 			Expect(k8sClient.Create(ctx, ns)).Should(Succeed())
 
-            By("Creating the secret")
+            By("Creating the secret in the sourceNamespace")
 			secret := corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secret1,
@@ -61,7 +64,7 @@ var _ = Describe("SecretSync controller", func() {
 			}
 			Expect(k8sClient.Create(ctx, &secret)).Should(Succeed())
 
-			By("Creating a first SecretSync custom resource")
+			By("Creating a first SecretSync custom resource in the destinationNamespace")
 			secretSync1 := syncv1.SecretSync{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secretSyncName1,
@@ -72,6 +75,19 @@ var _ = Describe("SecretSync controller", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync1)).Should(Succeed())
+
+            By("Checking if the SecretSync status has changed to the right status")
+            // Retrieve the SecretSync object to check its status
+            key := types.NamespacedName{Name: secretSyncName1, Namespace: destinationNamespace}
+            retrievedSecretSync := &syncv1.SecretSync{}
+            Eventually(func() bool {
+                if err := k8sClient.Get(ctx, key, retrievedSecretSync); err != nil {
+                    return false
+                }
+                // Check if the Secrets field matches the expected value
+                return reflect.DeepEqual(retrievedSecretSync.Status.Secrets, secret1Array[:])
+            }, timeout, interval).Should(BeTrue(), "SecretSync status didn't change to the right status")
 		})
 	})
+
 })
