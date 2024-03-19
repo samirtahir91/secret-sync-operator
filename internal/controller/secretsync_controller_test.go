@@ -150,7 +150,7 @@ var _ = Describe("SecretSync controller", func() {
     })
 
     Context("When deleting a secret owned by a SecretSync object in a destination namespace", func() {
-        It("Should trigger the reconiler to re-create the secret in the destination namespace", func() {
+        It("Should trigger the reconciler to re-create the secret in the destination namespace", func() {
             By("Removing a secret from the destination namespace")
             ctx := context.Background()
             // Get the secret from the destination namespace
@@ -162,6 +162,8 @@ var _ = Describe("SecretSync controller", func() {
                 Fail(fmt.Sprintf("Failed to retrieve the secret %s from the destination namespace: %v", secret1, err))
                 return
             }
+            // Record the resource version of the secret before reconciliation
+            initialResourceVersion := retrievedSecret.GetResourceVersion()
             // Delete the secret
             err = k8sClient.Delete(ctx, retrievedSecret)
             if err != nil {
@@ -169,23 +171,22 @@ var _ = Describe("SecretSync controller", func() {
                 Fail(fmt.Sprintf("Failed to delete the secret %s from the destination namespace: %v", secret1, err))
                 return
             }
-            // Ensure the secret is deleted
-            timeout := 120 * time.Second
-            interval := 3 * time.Second
-            Eventually(func() bool {
-                err := k8sClient.Get(ctx, secretKey, retrievedSecret)
-                return apierrors.IsNotFound(err)
-            }, timeout, interval).Should(BeTrue(), "Failed to delete the secret within timeout")
-
+    
             By("Waiting for the secret to be re-created")
             timeout = 120 * time.Second
             interval = 10 * time.Second
             Eventually(func() bool {
+                // Retrieve the secret again after reconciliation
                 err := k8sClient.Get(ctx, secretKey, retrievedSecret)
-                return err == nil
+                if err != nil {
+                    return false
+                }
+                // Compare the resource version of the secret after reconciliation
+                return retrievedSecret.GetResourceVersion() != initialResourceVersion
             }, timeout, interval).Should(BeTrue(), "Failed to recreate the secret within timeout")
             // At this point, the secret has been successfully recreated
         })
     })
+    
 
 })
