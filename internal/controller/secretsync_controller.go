@@ -156,10 +156,8 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			// Handle conflict error due to outdated version
 			if apierrors.IsConflict(err) {
 				l.Info("Conflict: SecretSync resource has been modified, retrying...")
-				return ctrl.Result{Requeue: true}, nil // Requeue reconciliation
 			}
 			l.Error(err, "Unable to update secretSync's status", "status", syncStatus)
-			return ctrl.Result{}, err
 		} else {
 			l.Info("secretSync's status updated", "status", syncStatus)
 		}
