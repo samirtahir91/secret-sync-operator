@@ -25,7 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	tutorialv1 "my.domain/tutorial/api/v1"
+	syncv1 "secret-sync-operator/api/v1"
 )
 
 var _ = Describe("SecretSync controller", func() {
@@ -55,25 +55,25 @@ var _ = Describe("SecretSync controller", func() {
 			Expect(k8sClient.Create(ctx, &secret)).Should(Succeed())
 
 			By("Creating a first SecretSync custom resource")
-			secretSync1 := tutorialv1.SecretSync{
+			secretSync1 := syncv1.SecretSync{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secretSyncName1,
 					Namespace: destinationNamespace,
 				},
-				Spec: tutorialv1.SecretSyncSpec{
-					Name: secret1,
+				Spec: syncv1.SecretSyncSpec{
+					Secrets: [secret1],
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync1)).Should(Succeed())
         
 			By("Creating another SecretSync custom resource")
-			secretSync2 := tutorialv1.SecretSync{
+			secretSync2 := syncv1.SecretSync{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secretSyncName2,
 					Namespace: destinationNamespace,
 				},
-				Spec: tutorialv1.SecretSyncSpec{
-					Name: secret2,
+				Spec: syncv1.SecretSyncSpec{
+					Secrets: [secret2],
 				},
 			}
 			Expect(k8sClient.Create(ctx, &secretSync2)).Should(Succeed())
