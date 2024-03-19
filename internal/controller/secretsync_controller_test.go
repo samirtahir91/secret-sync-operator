@@ -33,6 +33,7 @@ import (
 
 var (
 	secret1Array = [2]string{"secret-1", "secret-2"}
+    deletedSecret1Array = [1]string{"secret-1"}
 )
 
 var _ = Describe("SecretSync controller", func() {
@@ -109,5 +110,23 @@ var _ = Describe("SecretSync controller", func() {
             }, timeout, interval).Should(BeTrue(), "SecretSync status didn't change to the right status")
 		})
 	})
+
+    Context("When deleting a secret owned by a secreSync object", func() {
+        It("Should delete the secret in the destination namespace", func() {
+            By("Checking if the secret has been deleted from the destination namespace")
+            ctx := context.Background()
+            // Retrieve the SecretSync object to check its status
+            key := types.NamespacedName{Name: secretSyncName1, Namespace: destinationNamespace}
+            retrievedSecretSync := &syncv1.SecretSync{}
+            // Retrieve the SecretSync object from the Kubernetes API server
+            Expect(k8sClient.Get(ctx, key, retrievedSecretSync)).Should(Succeed())
+    
+            // Modify the SecretSync object
+            retrievedSecretSync.Spec.Secrets = deletedSecret1Array[:]
+    
+            // Update the SecretSync object with the modified fields
+            Expect(k8sClient.Update(ctx, retrievedSecretSync)).Should(Succeed())
+        })
+    })
 
 })
