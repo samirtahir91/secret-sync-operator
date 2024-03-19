@@ -29,8 +29,7 @@ import (
 )
 
 var (
-	secret1Array = [1]string{"secret-1"}
-	secret2Array = [1]string{"secret-2"}
+	secret1Array = [2]string{"secret-1", "secret-2"}
 )
 
 var _ = Describe("SecretSync controller", func() {
@@ -38,10 +37,6 @@ var _ = Describe("SecretSync controller", func() {
 	const (
 		secretSyncName1 = "secret-sync-1"
 		secret1 = "secret-1"
-
-		secretSyncName2   = "secret-sync-2"
-		secret2 = "secret-2"
-
 		sourceNamespace = "default"
         destinationNamespace = "foo"
 	)
@@ -56,6 +51,15 @@ var _ = Describe("SecretSync controller", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, ns)).Should(Succeed())
+
+            By("Creating the secret")
+			secret := corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      secret1,
+					Namespace: sourceNamespace,
+				},
+			}
+			Expect(k8sClient.Create(ctx, &secret)).Should(Succeed())
 
 			By("Creating a first SecretSync custom resource")
 			secretSync1 := syncv1.SecretSync{
