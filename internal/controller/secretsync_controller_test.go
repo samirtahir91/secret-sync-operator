@@ -173,8 +173,8 @@ var _ = Describe("SecretSync controller", func() {
             }
     
             By("Waiting for the secret to be re-created")
-            timeout = 120 * time.Second
-            interval = 10 * time.Second
+            timeout := 120 * time.Second
+            interval := 10 * time.Second
             Eventually(func() bool {
                 // Retrieve the secret again after reconciliation
                 err := k8sClient.Get(ctx, secretKey, retrievedSecret)
@@ -187,6 +187,4 @@ var _ = Describe("SecretSync controller", func() {
             // At this point, the secret has been successfully recreated
         })
     })
-    
-
 })
