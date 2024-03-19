@@ -1,0 +1,16 @@
+apiVersion: sync.samir.io/v1
+kind: SecretSync
+metadata:
+  annotations:
+  labels:
+    app.kubernetes.io/created-by: secret-sync-operator
+    app.kubernetes.io/instance: secretsync-sample
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: secretsync
+    app.kubernetes.io/part-of: secret-sync-operator
+  name: secretsync-sample
+  namespace: samir
+spec:
+  secrets:
+    - test2
+    - test3
