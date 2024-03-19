@@ -40,6 +40,7 @@ var _ = Describe("SecretSync controller", func() {
 	const (
 		secretSyncName1 = "secret-sync-1"
 		secret1 = "secret-1"
+        secret1 = "secret-2"
 		sourceNamespace = "default"
         destinationNamespace = "foo"
 	)
@@ -58,10 +59,19 @@ var _ = Describe("SecretSync controller", func() {
 			}
 			Expect(k8sClient.Create(ctx, ns)).Should(Succeed())
 
-            By("Creating the secret in the sourceNamespace")
+            By("Creating the secret-1 in the sourceNamespace")
 			secret := corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secret1,
+					Namespace: sourceNamespace,
+				},
+			}
+			Expect(k8sClient.Create(ctx, &secret)).Should(Succeed())
+
+            By("Creating the secret-2 in the sourceNamespace")
+			secret := corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      secret2,
 					Namespace: sourceNamespace,
 				},
 			}
