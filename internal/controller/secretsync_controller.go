@@ -143,7 +143,7 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Update syncStatus status
-	syncStatus = true
+	syncStatus := true
 	secretSync.Status.Synced = syncStatus
 	// Update the status of the SecretSync resource with optimistic locking
 	if err := r.Status().Update(ctx, secretSync); err != nil {
