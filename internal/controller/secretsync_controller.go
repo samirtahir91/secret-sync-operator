@@ -170,7 +170,7 @@ func (r *SecretSyncReconciler) updateSecretSyncStatus(ctx context.Context, names
     }
     
     // Update status field
-    secretSync.Status.Status = status
+    secretSync.Status.Synced = status
     
     // Update the SecretSync resource
     if err := r.Update(ctx, secretSync); err != nil {

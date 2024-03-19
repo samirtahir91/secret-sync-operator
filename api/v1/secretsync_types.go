@@ -36,7 +36,7 @@ type SecretSyncSpec struct {
 type SecretSyncStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-    Status string `json:"status,omitempty"`
+	Synced bool `json:"synced,omitempty"`
 }
 
 //+kubebuilder:object:root=true
