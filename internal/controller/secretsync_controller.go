@@ -42,13 +42,76 @@ type SecretSyncReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// SecretWatcherReconciler watches for changes to secrets in a source namespace.
+type SecretWatcherReconciler struct {
+    client.Client
+    Namespace string
+}
+
 // RBAC
 //+kubebuilder:rbac:groups=sync.samir.io,resources=secretsyncs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=sync.samir.io,resources=secretsyncs/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=sync.samir.io,resources=secretsyncs/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;update;create;delete;watch;patch
 
-// Reconcile
+// Reconcile of SecretWatcher (source namespace secrets)
+func (r *SecretWatcherReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
+	log := r.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
+
+    // Fetch the source secret that triggered the reconcile
+    sourceSecret := &corev1.Secret{}
+    if err := r.Get(ctx, req.NamespacedName, sourceSecret); err != nil {
+        if apierrors.IsNotFound(err) {
+            // If the source secret was deleted, log it and return without error
+            log.Info("Source secret not found", "namespace", req.Namespace, "name", req.Name)
+            return reconcile.Result{}, nil
+        }
+        // For other errors, log and return the error
+        log.Error(err, "Failed to get source secret", "namespace", req.Namespace, "name", req.Name)
+        return reconcile.Result{}, err
+    }
+
+    // Get all secrets with the same name as the source secret across namespaces
+    secrets := &corev1.SecretList{}
+    listOpts := []client.ListOption{
+        client.MatchingFields{"metadata.name": sourceSecret.Name},
+    }
+    if err := r.List(ctx, secrets, listOpts...); err != nil {
+        log.Error(err, "Failed to list secrets with the same name", "name", sourceSecret.Name)
+        return reconcile.Result{}, err
+    }
+
+    // Iterate over the secrets and update if owned by a SecretSync object
+    for _, secret := range secrets.Items {
+        if isOwnedBySecretSync(&secret) {
+            log.Info("Updating secret", "namespace", secret.Namespace, "name", secret.Name)
+            // Update the secret with data from the source secret
+            updatedSecret := secret.DeepCopy()
+            updatedSecret.Data = sourceSecret.Data
+
+            if err := r.Update(ctx, updatedSecret); err != nil {
+                log.Error(err, "Failed to update secret", "namespace", secret.Namespace, "name", secret.Name)
+                return reconcile.Result{}, err
+            }
+            log.Info("Secret updated successfully", "namespace", secret.Namespace, "name", secret.Name)
+        }
+    }
+
+    return reconcile.Result{}, nil
+}
+
+// Helper function to check if a secret is owned by a SecretSync object
+func isOwnedBySecretSync(secret *corev1.Secret) bool {
+    for _, ownerRef := range secret.OwnerReferences {
+        if ownerRef.Kind == "SecretSync" {
+            return true
+        }
+    }
+    return false
+}
+
+
+// Reconcile of SecretSync (destination namespace)
 func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 	l.Info("Enter Reconcile", "req", req)
@@ -66,11 +129,12 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Read the source namespace from environment variable
-	sourceNamespace := os.Getenv("SOURCE_NAMESPACE")
-	if sourceNamespace == "" {
-		// Handle case where environment variable is not set
-		return ctrl.Result{}, errors.New("SOURCE_NAMESPACE environment variable not set")
-	}
+	sourceNamespace := "default"
+	//sourceNamespace := os.Getenv("SOURCE_NAMESPACE")
+	//if sourceNamespace == "" {
+	//	// Handle case where environment variable is not set
+	//	return ctrl.Result{}, errors.New("SOURCE_NAMESPACE environment variable not set")
+	//}
 
 	// Call the function to delete unreferenced secrets
 	if err := r.deleteUnreferencedSecrets(ctx, secretSync); err != nil {
@@ -231,4 +295,17 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&syncv1.SecretSync{}). // Watch changes to secretSync objects
 		Owns(&corev1.Secret{}).    // Watch secrets owned by SecretSync objects
 		Complete(r)
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *SecretWatcherReconciler) SetupWithManager(mgr ctrl.Manager) error {
+    return ctrl.NewControllerManagedBy(mgr).
+        For(&corev1.Secret{}).
+        WithEventFilter(predicate.Funcs{
+            UpdateFunc: func(e event.UpdateEvent) bool {
+                // Filter updates to secrets in the specified namespace
+                return e.MetaNew.GetNamespace() == r.Namespace
+            },
+        }).
+        Complete(r)
 }
