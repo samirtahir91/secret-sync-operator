@@ -308,7 +308,12 @@ func (r *SecretWatcherReconciler) SetupWithManager(mgr ctrl.Manager) error {
         WithEventFilter(predicate.Funcs{
             UpdateFunc: func(e event.UpdateEvent) bool {
                 // Filter updates to secrets in the specified namespace
-                return e.MetaNew.GetNamespace() == r.Namespace
+                secret, ok := e.ObjectNew.(*corev1.Secret)
+                if !ok {
+                    // Not a secret object
+                    return false
+                }
+                return secret.Namespace == r.Namespace
             },
         }).
         Complete(r)
