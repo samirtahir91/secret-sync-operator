@@ -129,17 +129,22 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 				return ctrl.Result{}, err
 			}
 		} else {
-			// Update the destination secret
-			l.Info("Updating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", secretName)
-			destinationSecret.Data = sourceSecret.Data // Update data from source to destination
-			// Set owner reference to SecretSync object
-			if err := controllerutil.SetControllerReference(secretSync, destinationSecret, r.Scheme); err != nil {
-				l.Error(err, "Failed to set owner reference for destination secret")
-				return ctrl.Result{}, err
-			}
-			if err := r.Update(ctx, destinationSecret); err != nil {
-				l.Error(err, "Failed to update Secret in the destination namespace", "Namespace", secretSync.Namespace, "Secret", secretName)
-				return ctrl.Result{}, err
+			// Check if the data of the source and destination secrets are different
+			if !reflect.DeepEqual(sourceSecret.Data, destinationSecret.Data) {
+				// Update the destination secret
+				l.Info("Updating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", secretName)
+				destinationSecret.Data = sourceSecret.Data // Update data from source to destination
+				// Set owner reference to SecretSync object
+				if err := controllerutil.SetControllerReference(secretSync, destinationSecret, r.Scheme); err != nil {
+					l.Error(err, "Failed to set owner reference for destination secret")
+					return ctrl.Result{}, err
+				}
+				if err := r.Update(ctx, destinationSecret); err != nil {
+					l.Error(err, "Failed to update Secret in the destination namespace", "Namespace", secretSync.Namespace, "Secret", secretName)
+					return ctrl.Result{}, err
+				}
+			} else {
+				l.Info("Destination secret is already up to date", "Namespace", secretSync.Namespace, "Secret", secretName)
 			}
 		}
 	}
