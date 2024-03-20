@@ -5,6 +5,8 @@ This is a Kubernetes operator that will sync secrets from a defined source names
 Key features:
 - Uses a custom resource `SecretSync` in your destination namespace.
 - Reads secrets defined in a `SecretSync` resource and fetches from a source namespace - configured in the controller deployment env spec `SOURCE_NAMESPACE`.
+    - `SOURCE_NAMESPACE` is set to `default`. it can be updated in the [manager deployment](config/manager/manager.yaml#L104)
+    - The idea is admins only can configure the global source namespace via this ENV var.
 - This allows for centralised secrets to by synced accross any tenant namespace, i.e. global credentials or certificates.
 - Deleting the `SecretSync` object will also delete the secrets it was managing.
 - The operator will reconcile secrets that are defined in the `SecretSync.spec.secrets` list only, when:
@@ -62,6 +64,29 @@ You can apply the samples (examples) from the config/sample:
 
 ```sh
 kubectl apply -k config/samples/
+```
+
+### Testing
+
+Current integration tests cover the scenarios:
+- Creating `SecretSync` objects and checking the secrets are synced to a namespace
+- Removing a secret from a `SecretSync` object and checking the secret has been deleted from a namespace
+- Deleting a secret owned by a `SecretSync` object causes the reconilation of the secret to be re-created.
+- Modifying a secret's data that is owned by a `SecretSync` object causes the reconcilation of the secret to be updated with the source secret's data.
+
+**Run the controller in the foreground for testing:**
+```sh
+make run
+```
+
+**Run integration tests:**
+```sh
+make test
+```
+
+**Generate coverage html report:**
+```sh
+go tool cover -html=cover.out -o coverage.html
 ```
 
 ### To Uninstall
