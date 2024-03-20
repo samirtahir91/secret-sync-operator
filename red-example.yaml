@@ -1,0 +1,10 @@
+apiVersion: sync.samir.io/v1
+kind: SecretSync
+metadata:
+  name: secretsync-red
+  namespace: red
+spec:
+  secrets:
+    - db-user-pass
+    - red1
+    - red2
