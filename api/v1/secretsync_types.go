@@ -25,18 +25,14 @@ import (
 
 // SecretSyncSpec defines the desired state of SecretSync
 type SecretSyncSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	// secrets that will be synced
 	Secrets []string `json:"secrets"`
 }
 
 // SecretSyncStatus defines the observed state of SecretSync
 type SecretSyncStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	Secrets []string `json:"secrets"`
+	// Synced will be set to true if secrets reconciled
+	Synced bool `json:"synced,omitempty"`
 }
 
 //+kubebuilder:object:root=true
