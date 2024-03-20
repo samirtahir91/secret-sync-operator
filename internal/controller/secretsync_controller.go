@@ -18,19 +18,19 @@ package controller
 
 import (
 	"context"
-    "errors"
-    "os"
+    //"errors"
+    //"os"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	//apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	//"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	syncv1 "secret-sync-operator/api/v1"
 
@@ -50,8 +50,15 @@ type SecretSyncReconciler struct {
 
 // Check the object that triggered the reconcile and call the function for that object (secret or secretsync)
 func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+    // Fetch the object based on the request
+    obj := &unstructured.Unstructured{}
+    obj.SetGroupVersionKind(req.Type)
+    if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
+        return ctrl.Result{}, err
+    }
+
     // Determine the type of object based on the Kind
-    switch req.Kind.Kind {
+    switch obj.GetKind() {
     case "Secret":
         secret := &corev1.Secret{}
         if err := r.Get(ctx, req.NamespacedName, secret); err != nil {
@@ -73,14 +80,14 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // Reconciliation for Secret objects
 func (r *SecretSyncReconciler) reconcileSecret(ctx context.Context, secret *corev1.Secret) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
-	l.Info("SECRET Reconcile", "req", req)
+	l.Info("SECRET Reconcile")
 	return ctrl.Result{}, nil
 }
 
 // Reconciliation for SecretSync objects
 func (r *SecretSyncReconciler) reconcileSecretSync(ctx context.Context, secretSync *syncv1.SecretSync) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
-	l.Info("SECRET_SYNC Reconcile", "req", req)
+	l.Info("SECRET_SYNC Reconcile")
 	return ctrl.Result{}, nil
 }
 
