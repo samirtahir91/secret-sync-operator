@@ -10,6 +10,10 @@ Key features:
 - The operator will reconcile secrets that are defined in the `SecretSync.spec.secrets` list only, when:
     - Modifications are made to the secrets owned by the `SecretSync` object (i.e. a user manually update or deletes a secret owned by the `SecretSync` object)
     - Modifications are made to the `SecretSync` object (removing a secret from the list will force a delete of the secret in the destination namespace and vice versa)
+- It will skip a secret syncing if the data has not changed from the source secret
+
+
+> :warning: **Do not have duplicate secrets for `SecretSync` objects created in the same namespace**: It is recommended to have a single `SecretSync` object per namespace. The controller will **not** check for this and can cause undesired behaviour if multiple `SecretSync` objects are attempting to sync the same secrets in the same namespace.
 
 ## Example SecretSync object
 ```
