@@ -132,7 +132,7 @@ func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv
     if err := r.Get(ctx, destinationSecretKey, destinationSecret); err != nil {
         if apierrors.IsNotFound(err) {
             // Create the destination secret
-            return r.createDestinationSecret(ctx, l, secretSync, sourceSecret)
+            return r.createDestinationSecret(ctx, secretSync, sourceSecret)
         }
         l.Error(err, "Failed to get destination secret", "Namespace", secretSync.Namespace, "Secret", secretName)
         return err
@@ -141,7 +141,7 @@ func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv
     // Check if the data of the source and destination secrets are different
     if !reflect.DeepEqual(sourceSecret.Data, destinationSecret.Data) {
         // Update the destination secret
-        return r.updateDestinationSecret(ctx, l, secretSync, destinationSecret, sourceSecret)
+        return r.updateDestinationSecret(ctx, secretSync, destinationSecret, sourceSecret)
     }
     // Destination secret is already up to date
     l.Info("Destination secret is already up to date", "Namespace", secretSync.Namespace, "Secret", secretName)
