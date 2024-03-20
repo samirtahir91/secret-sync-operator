@@ -148,8 +148,9 @@ func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv
     return nil
 }
 
-func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, l logr.Logger, secretSync *syncv1.SecretSync, sourceSecret *corev1.Secret) error {
-    l.Info("Creating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
+func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, secretSync *syncv1.SecretSync, sourceSecret *corev1.Secret) error {
+	l := log.FromContext(ctx)
+	l.Info("Creating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
 
     destinationSecret := &corev1.Secret{
         ObjectMeta: metav1.ObjectMeta{
@@ -170,9 +171,11 @@ func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, l lo
     return nil
 }
 
-func (r *SecretSyncReconciler) updateDestinationSecret(ctx context.Context, l logr.Logger, secretSync *syncv1.SecretSync, destinationSecret, sourceSecret *corev1.Secret) error {
+func (r *SecretSyncReconciler) updateDestinationSecret(ctx context.Context, secretSync *syncv1.SecretSync, destinationSecret, sourceSecret *corev1.Secret) error {
+	l := log.FromContext(ctx)
     l.Info("Updating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
-    destinationSecret.Data = sourceSecret.Data // Update data from source to destination
+    
+	destinationSecret.Data = sourceSecret.Data // Update data from source to destination
     // Set owner reference to SecretSync object
     if err := controllerutil.SetControllerReference(secretSync, destinationSecret, r.Scheme); err != nil {
         l.Error(err, "Failed to set owner reference for destination secret")
