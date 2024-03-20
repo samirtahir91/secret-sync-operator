@@ -19,8 +19,8 @@ package controller
 import (
 	"context"
 	"reflect"
-    //"errors"
-    //"os"
+    "errors"
+    "os"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -66,8 +66,12 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
         return ctrl.Result{}, err
     }
 
-    // Read the source namespace from environment variable
-    sourceNamespace := "default"
+	// Read the source namespace from environment variable
+	sourceNamespace := os.Getenv("SOURCE_NAMESPACE")
+	if sourceNamespace == "" {
+		// Handle case where environment variable is not set
+		return ctrl.Result{}, errors.New("SOURCE_NAMESPACE environment variable not set")
+	}
 
     // Call the function to delete unreferenced secrets
     if err := r.deleteUnreferencedSecrets(ctx, secretSync); err != nil {
