@@ -206,6 +206,6 @@ func (r *SecretSyncReconciler) deleteUnreferencedSecrets(ctx context.Context, se
 func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
     return ctrl.NewControllerManagedBy(mgr).
         For(&syncv1.SecretSync{}). // Watch changes to secretSync objects
-        Owns(&corev1.Secret{}). // Watch secrets owned by SecretSync objects
+        //Owns(&corev1.Secret{}). // Watch secrets owned by SecretSync objects
         Complete(r)
 }
