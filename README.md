@@ -14,9 +14,6 @@ Key features:
     - Modifications are made to the `SecretSync` object (removing a secret from the list will force a delete of the secret in the destination namespace and vice versa)
 - It will skip a secret syncing if the data has not changed from the source secret
 
-
-> :warning: **Do not have duplicate secrets for `SecretSync` objects created in the same namespace**: It is recommended to have a single `SecretSync` object per namespace. The controller will **not** check for this and can cause undesired behaviour if multiple `SecretSync` objects are attempting to sync the same secrets in the same namespace.
-
 ## Example SecretSync object
 ```
 kubectl apply -f - <<EOF
@@ -24,13 +21,27 @@ apiVersion: sync.samir.io/v1
 kind: SecretSync
 metadata:
   name: secretsync-sample
-  namespace: samir
+  namespace: team-1
 spec:
   secrets:
     - secret1
     - secret2
 EOF
 ```
+
+> :warning: **Do not have duplicate secrets for `SecretSync` objects created in the same namespace**: It is recommended to have a single `SecretSync` object per namespace. \
+> The controller will **not** check for this and can cause undesired behaviour if multiple `SecretSync` objects are attempting to sync the same secrets in the same namespace. \
+> You could limit the count for SecretSync objects to 1 using a Resource Quota with the object quota, i.e. for namespace `team-1`
+> ```sh
+> apiVersion: v1
+>kind: ResourceQuota
+>metadata:
+>  name: secretsync-object-quota
+>  namespace: team-1
+>spec:
+>  hard:
+>    count/secretsyncs.sync.samir.io: 1
+> ```
 
 ## Getting Started
 
