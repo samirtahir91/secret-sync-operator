@@ -18,8 +18,8 @@ package controller
 
 import (
 	"context"
-	"errors"
-	"os"
+	//"errors"
+	//"os"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -55,20 +55,21 @@ type SecretWatcherReconciler struct {
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;update;create;delete;watch;patch
 
 // Reconcile of SecretWatcher (source namespace secrets)
-func (r *SecretWatcherReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-	log := r.Log.WithValues("Request.Namespace", req.Namespace, "Request.Name", req.Name)
-
+func (r *SecretWatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	l := log.FromContext(ctx)
+	l.Info("Enter Reconcile", "req", req)
+	
     // Fetch the source secret that triggered the reconcile
     sourceSecret := &corev1.Secret{}
     if err := r.Get(ctx, req.NamespacedName, sourceSecret); err != nil {
         if apierrors.IsNotFound(err) {
             // If the source secret was deleted, log it and return without error
-            log.Info("Source secret not found", "namespace", req.Namespace, "name", req.Name)
-            return reconcile.Result{}, nil
+            l.Info("Source secret not found", "namespace", req.Namespace, "name", req.Name)
+            return ctrl.Result{}, nil
         }
         // For other errors, log and return the error
-        log.Error(err, "Failed to get source secret", "namespace", req.Namespace, "name", req.Name)
-        return reconcile.Result{}, err
+        l.Error(err, "Failed to get source secret", "namespace", req.Namespace, "name", req.Name)
+        return ctrl.Result{}, err
     }
 
     // Get all secrets with the same name as the source secret across namespaces
@@ -77,27 +78,27 @@ func (r *SecretWatcherReconciler) Reconcile(ctx context.Context, req reconcile.R
         client.MatchingFields{"metadata.name": sourceSecret.Name},
     }
     if err := r.List(ctx, secrets, listOpts...); err != nil {
-        log.Error(err, "Failed to list secrets with the same name", "name", sourceSecret.Name)
-        return reconcile.Result{}, err
+        l.Error(err, "Failed to list secrets with the same name", "name", sourceSecret.Name)
+        return ctrl.Result{}, err
     }
 
     // Iterate over the secrets and update if owned by a SecretSync object
     for _, secret := range secrets.Items {
         if isOwnedBySecretSync(&secret) {
-            log.Info("Updating secret", "namespace", secret.Namespace, "name", secret.Name)
+            l.Info("Updating secret", "namespace", secret.Namespace, "name", secret.Name)
             // Update the secret with data from the source secret
             updatedSecret := secret.DeepCopy()
             updatedSecret.Data = sourceSecret.Data
 
             if err := r.Update(ctx, updatedSecret); err != nil {
-                log.Error(err, "Failed to update secret", "namespace", secret.Namespace, "name", secret.Name)
-                return reconcile.Result{}, err
+                l.Error(err, "Failed to update secret", "namespace", secret.Namespace, "name", secret.Name)
+                return ctrl.Result{}, err
             }
-            log.Info("Secret updated successfully", "namespace", secret.Namespace, "name", secret.Name)
+            l.Info("Secret updated successfully", "namespace", secret.Namespace, "name", secret.Name)
         }
     }
 
-    return reconcile.Result{}, nil
+    return ctrl.Result{}, nil
 }
 
 // Helper function to check if a secret is owned by a SecretSync object
