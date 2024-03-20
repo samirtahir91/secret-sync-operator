@@ -4,17 +4,19 @@ This is a Kubernetes operator that will sync secrets from a defined source names
 ## Description
 Key features:
 - Uses a custom resource `SecretSync` in your destination namespace.
-- Reads secrets defined in a `SecretSync` resource and fetches from a source namespace - configured in the controller deployment env spec `SOURCE_NAMESPACE`.
-    - `SOURCE_NAMESPACE` is set to `default`. it can be updated in the [manager deployment](config/manager/manager.yaml#L104)
-    - The idea is admins only can configure the global source namespace via this ENV var.
-- This allows for centralised secrets to by synced accross any tenant namespace, i.e. global credentials or certificates.
-- Deleting the `SecretSync` object will also delete the secrets it was managing.
+- Reads secrets defined in a `SecretSync` resource in a tenant namespace and syncs them from a source namespace - configured in the controller deployment env spec `SOURCE_NAMESPACE`.
+    - `SOURCE_NAMESPACE` is set to `default`. It can be updated in the [manager deployment](config/manager/manager.yaml#L104)
+    - The idea is for admins to configure the global source namespace via this ENV var.
+- Allows for centralised secrets to by synced accross any tenant namespace, i.e. global credentials or certificates.
+- Deleting the `SecretSync` object will also delete the secrets it owns.
 - The operator will reconcile secrets that are defined in the `SecretSync.spec.secrets` list only, when:
     - Modifications are made to the secrets owned by the `SecretSync` object (i.e. a user manually update or deletes a secret owned by the `SecretSync` object)
     - Modifications are made to the `SecretSync` object (removing a secret from the list will force a delete of the secret in the destination namespace and vice versa)
-- It will skip a secret syncing if the data has not changed from the source secret
+- It will skip a secret syncing if the data already matches a source secret data.
 
 ## Example SecretSync object
+Below example will setup a sync for `secret1` and `secret2` in the namespace `team-1`, assuming the controller has been configured with a source namespace `default`, the controller will reconcile the secrets into the `team-1` namespace (copying from the `default` namespace). \
+Any changes to the secrets will trigger a sync/reconile to keep the secrets in sync with the `default` namespace.
 ```
 kubectl apply -f - <<EOF
 apiVersion: sync.samir.io/v1
