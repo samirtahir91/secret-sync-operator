@@ -1,0 +1,9 @@
+apiVersion: sync.samir.io/v1
+kind: SecretSync
+metadata:
+  name: secretsync-blue
+  namespace: blue
+spec:
+  secrets:
+  - blue1
+  - blue2
