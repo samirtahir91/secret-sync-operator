@@ -18,8 +18,8 @@ package controller
 
 import (
 	"context"
-	//"errors"
-	//"os"
+	"errors"
+	"os"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,7 +48,7 @@ type SecretSyncReconciler struct {
 //+kubebuilder:rbac:groups=sync.samir.io,resources=secretsyncs/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;update;create;delete;watch;patch
 
-// Reconcile of SecretSync (destination namespace)
+// Reconcile
 func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 	l.Info("Enter Reconcile", "req", req)
@@ -66,12 +66,11 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Read the source namespace from environment variable
-	sourceNamespace := "default"
-	//sourceNamespace := os.Getenv("SOURCE_NAMESPACE")
-	//if sourceNamespace == "" {
-	//	// Handle case where environment variable is not set
-	//	return ctrl.Result{}, errors.New("SOURCE_NAMESPACE environment variable not set")
-	//}
+	sourceNamespace := os.Getenv("SOURCE_NAMESPACE")
+	if sourceNamespace == "" {
+		// Handle case where environment variable is not set
+		return ctrl.Result{}, errors.New("SOURCE_NAMESPACE environment variable not set")
+	}
 
 	// Call the function to delete unreferenced secrets
 	if err := r.deleteUnreferencedSecrets(ctx, secretSync); err != nil {
@@ -232,22 +231,4 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&syncv1.SecretSync{}). // Watch changes to secretSync objects
 		Owns(&corev1.Secret{}).    // Watch secrets owned by SecretSync objects
 		Complete(r)
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *SecretWatcherReconciler) SetupWithManager(mgr ctrl.Manager) error {
-    return ctrl.NewControllerManagedBy(mgr).
-        For(&corev1.Secret{}).
-        WithEventFilter(predicate.Funcs{
-            UpdateFunc: func(e event.UpdateEvent) bool {
-                // Filter updates to secrets in the specified namespace
-                secret, ok := e.ObjectNew.(*corev1.Secret)
-                if !ok {
-                    // Not a secret object
-                    return false
-                }
-                return secret.Namespace == r.Namespace
-            },
-        }).
-        Complete(r)
 }
