@@ -291,6 +291,7 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
             &corev1.Secret{},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
             builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			builder.WithPredicates(predicate.NamespacePredicate{Namespace: "default"}),
         ).
         Complete(r)
 }
