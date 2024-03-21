@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
-	"os"
+	//"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
