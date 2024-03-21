@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -62,7 +63,7 @@ var _ = BeforeSuite(func() {
 
 	By("Setting the SOURCE_NAMESPACE environment variable")
     os.Setenv("SOURCE_NAMESPACE", "default")
-	
+
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
