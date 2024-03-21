@@ -18,8 +18,7 @@ package controller
 
 import (
 	"context"
-	//"errors"
-	//"os"
+	"os"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
