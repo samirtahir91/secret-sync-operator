@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
-	//"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -60,8 +59,6 @@ func TestControllers(t *testing.T) {
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 	ctx, cancel = context.WithCancel(context.TODO())
-
-	Expect(os.Setenv("SOURCE_NAMESPACE", "default")).To(Succeed())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{

@@ -51,17 +51,6 @@ const (
 // source namespace where secrets are synced from
 var sourceNamespace string
 
-// set the source namespace from env var
-func init() {
-    // Read the source namespace from environment variable
-    sourceNamespace = os.Getenv("SOURCE_NAMESPACE")
-    if sourceNamespace == "" {
-        // Handle case where environment variable is not set
-        panic("SOURCE_NAMESPACE environment variable not set")
-    }
-}
-
-
 // SecretSyncReconciler reconciles a SecretSync object
 type SecretSyncReconciler struct {
 	client.Client
@@ -306,6 +295,14 @@ func defaultNamespacePredicate() predicate.Predicate {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
+    // Read the source namespace from environment variable
+    sourceNamespace = os.Getenv("SOURCE_NAMESPACE")
+    if sourceNamespace == "" {
+        // Handle case where environment variable is not set
+        panic("SOURCE_NAMESPACE environment variable not set")
+    }
+
     if err := mgr.GetFieldIndexer().IndexField(context.Background(), &syncv1.SecretSync{}, secretField, func(rawObj client.Object) []string {
         secretSync := rawObj.(*syncv1.SecretSync)
         return secretSync.Spec.Secrets

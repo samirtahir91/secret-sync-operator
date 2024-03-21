@@ -51,6 +51,9 @@ var _ = Describe("SecretSync controller", func() {
 
 	Context("When setting up the test environment", func() {
 		It("Should create SecretSync custom resources", func() {
+			By("Setting the SOURCE_NAMESPACE environment variable")
+			os.Setenv("SOURCE_NAMESPACE", sourceNamespace)
+
 			By("Creating a namespace for the destinationNamespace")
 			ctx := context.Background()
 			ns := &corev1.Namespace{
