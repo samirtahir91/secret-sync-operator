@@ -47,6 +47,7 @@ import (
 // SecretSyncReconciler reconciles a SecretSync object
 type SecretSyncReconciler struct {
 	client.Client
+	Indexer client.FieldIndexer
 	Scheme *runtime.Scheme
 }
 
@@ -240,40 +241,26 @@ const (
 // Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
 func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, secret client.Object) []reconcile.Request {
 	l := log.FromContext(ctx)
-    // Retrieve the list of SecretSync names referencing the updated secret
-    var secretSyncNames []string
-    if err := r.Indexer.IndexField(ctx, &syncv1.SecretSync{}, secretField, secret.GetName(), &secretSyncNames); err != nil {
+
+    var requests []reconcile.Request
+
+    // Retrieve the list of SecretSync objects referencing the updated secret from the index
+    if err := r.Indexer.IndexField(ctx, &syncv1.SecretSync{}, secretField, secret.GetName(), &requests); err != nil {
         l.Error(err, "Failed to retrieve SecretSync objects referencing the secret", "Secret", secret.GetName())
-        return []reconcile.Request{}
+        return requests
     }
 
-    l.Info("Retrieved SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReferencingSecretSyncs", secretSyncNames)
-
-    // Prepare the reconcile requests for the affected SecretSync objects
-    requests := make([]reconcile.Request, len(secretSyncNames))
-    for i, name := range secretSyncNames {
-        requests[i] = reconcile.Request{
-            NamespacedName: types.NamespacedName{
-                Name: name,
-            },
-        }
-    }
-
-    l.Info("Prepared reconcile requests for SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReconcileRequests", requests)
-
+    l.Info("Retrieved SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReconcileRequests", requests)
     return requests
 }
+
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
     if err := mgr.GetFieldIndexer().IndexField(context.Background(), &syncv1.SecretSync{}, secretField, func(rawObj client.Object) []string {
         // Extract the secrets from the SecretSync Spec and return them for indexing
         secretSync := rawObj.(*syncv1.SecretSync)
-        var secrets []string
-        for _, secret := range secretSync.Spec.Secrets {
-            secrets = append(secrets, secret.Name)
-        }
-        return secrets
+        return secretSync.Spec.Secrets
     }); err != nil {
         return err
     }
