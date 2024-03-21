@@ -20,6 +20,10 @@ import (
 	"flag"
 	"os"
 
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -92,15 +96,6 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "SecretSync")
 		os.Exit(1)
 	}
-
-	// Setup SecretWatcherReconciler
-	if err = (&controller.SecretWatcherReconciler{
-		Client:    mgr.GetClient(),
-		Namespace: "default",
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "SecretWatcher")
-		os.Exit(1)
-	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -118,4 +113,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-
