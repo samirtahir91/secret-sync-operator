@@ -34,6 +34,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	syncv1 "secret-sync-operator/api/v1"
+
+	"k8s.io/apimachinery/pkg/fields" // Required for Watching
+    "k8s.io/apimachinery/pkg/types" // Required for Watching
+    "sigs.k8s.io/controller-runtime/pkg/builder" // Required for Watching
+    "sigs.k8s.io/controller-runtime/pkg/handler" // Required for Watching
+    "sigs.k8s.io/controller-runtime/pkg/predicate" // Required for Watching
+    "sigs.k8s.io/controller-runtime/pkg/reconcile" // Required for Watching
+    "sigs.k8s.io/controller-runtime/pkg/source" // Required for Watching
 )
 
 // SecretSyncReconciler reconciles a SecretSync object
@@ -225,10 +233,58 @@ func (r *SecretSyncReconciler) deleteUnreferencedSecrets(ctx context.Context, se
 	return nil
 }
 
+const (
+    secretField = ".spec.secrets"
+)
+
+// Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
+func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, secret client.Object, log logr.Logger) []reconcile.Request {
+	l := log.FromContext(ctx)
+    // Retrieve the list of SecretSync names referencing the updated secret
+    var secretSyncNames []string
+    if err := r.Indexer.IndexField(ctx, &syncv1.SecretSync{}, secretField, secret.GetName(), &secretSyncNames); err != nil {
+        log.Error(err, "Failed to retrieve SecretSync objects referencing the secret", "Secret", secret.GetName())
+        return []reconcile.Request{}
+    }
+
+    l.Info("Retrieved SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReferencingSecretSyncs", secretSyncNames)
+
+    // Prepare the reconcile requests for the affected SecretSync objects
+    requests := make([]reconcile.Request, len(secretSyncNames))
+    for i, name := range secretSyncNames {
+        requests[i] = reconcile.Request{
+            NamespacedName: types.NamespacedName{
+                Name: name,
+            },
+        }
+    }
+
+    l.Info("Prepared reconcile requests for SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReconcileRequests", requests)
+
+    return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&syncv1.SecretSync{}). // Watch changes to secretSync objects
-		Owns(&corev1.Secret{}).    // Watch secrets owned by SecretSync objects
-		Complete(r)
+    if err := mgr.GetFieldIndexer().IndexField(context.Background(), &syncv1.SecretSync{}, secretField, func(rawObj client.Object) []string {
+        // Extract the secrets from the SecretSync Spec and return them for indexing
+        secretSync := rawObj.(*syncv1.SecretSync)
+        var secrets []string
+        for _, secret := range secretSync.Spec.Secrets {
+            secrets = append(secrets, secret.Name)
+        }
+        return secrets
+    }); err != nil {
+        return err
+    }
+
+    return ctrl.NewControllerManagedBy(mgr).
+        For(&syncv1.SecretSync{}).
+        Owns(&corev1.Secret{}).
+        Watches(
+            &source.Kind{Type: &corev1.Secret{}},
+            handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
+            builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+        ).
+        Complete(r)
 }
