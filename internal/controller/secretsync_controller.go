@@ -115,6 +115,7 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
+// Validate the source secret against the dentination namespace and either create or update it calling the relative functions.
 func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv1.SecretSync, secretName, sourceNamespace string) error {
 	l := log.FromContext(ctx)
 	l.Info("Processing", "Namespace", sourceNamespace, "Secret", secretName)
@@ -159,6 +160,7 @@ func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv
 	return nil
 }
 
+// Create a copy of a secret from the source Namespace in the destination Namespace
 func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, secretSync *syncv1.SecretSync, sourceSecret *corev1.Secret) error {
 	l := log.FromContext(ctx)
 	l.Info("Creating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
@@ -182,6 +184,7 @@ func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, secr
 	return nil
 }
 
+// Update secrets in a destination namespace with the data from the source namespace
 func (r *SecretSyncReconciler) updateDestinationSecret(ctx context.Context, secretSync *syncv1.SecretSync, destinationSecret, sourceSecret *corev1.Secret) error {
 	l := log.FromContext(ctx)
 	l.Info("Updating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
@@ -303,6 +306,11 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
         panic("SOURCE_NAMESPACE environment variable not set")
     }
 
+	/*
+		The `spec.secrets` field must be indexed by the manager, so that we will be able to lookup `SecretSyncs` by a referenced `Secret` name.
+		This will allow for quickly answer the question:
+		- If Secret _x_ is updated, which SecretSyncs are affected?
+	*/
     if err := mgr.GetFieldIndexer().IndexField(context.Background(), &syncv1.SecretSync{}, secretField, func(rawObj client.Object) []string {
         secretSync := rawObj.(*syncv1.SecretSync)
         return secretSync.Spec.Secrets
