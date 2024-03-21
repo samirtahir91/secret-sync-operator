@@ -291,7 +291,22 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
             &corev1.Secret{},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
             builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-			builder.WithPredicates(predicate.NamespacePredicate{Namespace: "default"}),
+            builder.WithPredicates(
+                predicate.Funcs{
+                    CreateFunc: func(e event.CreateEvent) bool {
+                        return e.Meta.GetNamespace() == "default"
+                    },
+                    UpdateFunc: func(e event.UpdateEvent) bool {
+                        return e.MetaNew.GetNamespace() == "default"
+                    },
+                    DeleteFunc: func(e event.DeleteEvent) bool {
+                        return e.Meta.GetNamespace() == "default"
+                    },
+                    GenericFunc: func(e event.GenericEvent) bool {
+                        return e.Meta.GetNamespace() == "default"
+                    },
+                },
+            ),
         ).
         Complete(r)
 }
