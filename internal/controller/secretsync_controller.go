@@ -238,12 +238,12 @@ const (
 
 // Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
 func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, secret client.Object) []reconcile.Request {
-	l := log.FromContext(ctx)
+    l := log.FromContext(ctx)
 
     var requests []reconcile.Request
 
     // Retrieve the list of SecretSync objects referencing the updated secret from the index
-    if err := r.Indexer.IndexField(ctx, &syncv1.SecretSync{}, secretField, secret.GetName(), &requests); err != nil {
+    if err := r.Indexer.IndexField(ctx, &syncv1.SecretSync{}, secretField, secret.GetName()); err != nil {
         l.Error(err, "Failed to retrieve SecretSync objects referencing the secret", "Secret", secret.GetName())
         return requests
     }
