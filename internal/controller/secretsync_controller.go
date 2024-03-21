@@ -40,8 +40,6 @@ import (
     "sigs.k8s.io/controller-runtime/pkg/handler" // Required for Watching
     "sigs.k8s.io/controller-runtime/pkg/predicate" // Required for Watching
     "sigs.k8s.io/controller-runtime/pkg/reconcile" // Required for Watching
-	"sigs.k8s.io/controller-runtime/pkg/event"
-
 )
 
 // SecretSyncReconciler reconciles a SecretSync object
@@ -274,7 +272,23 @@ func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o clien
     return requests
 }
 
-
+// Define a predicate function to filter events for the default namespace
+func defaultNamespacePredicate() predicate.Predicate {
+    return predicate.Funcs{
+        CreateFunc: func(e event.CreateEvent) bool {
+            // Filter out create events not in the default namespace
+            return e.Object.GetNamespace() == "default"
+        },
+        UpdateFunc: func(e event.UpdateEvent) bool {
+            // Filter out update events not in the default namespace
+            return e.ObjectNew.GetNamespace() == "default"
+        },
+        DeleteFunc: func(e event.DeleteEvent) bool {
+            // Filter out delete events not in the default namespace
+            return e.Object.GetNamespace() == "default"
+        },
+    }
+}
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -292,9 +306,7 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
             &corev1.Secret{},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
             builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-            WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
-                return obj.GetNamespace() == "default"
-            })),
+			builder.WithPredicates(defaultNamespacePredicate()),
         ).
         Complete(r)
 }
