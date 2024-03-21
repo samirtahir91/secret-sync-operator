@@ -290,7 +290,7 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
             &corev1.Secret{},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
             builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-            builder.WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
+            WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
                 return obj.GetNamespace() == "default"
             })),
         ).
