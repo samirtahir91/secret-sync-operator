@@ -35,7 +35,7 @@ import (
 
 	syncv1 "secret-sync-operator/api/v1"
 
-	"k8s.io/apimachinery/pkg/fields" // Required for Watching
+	//"k8s.io/apimachinery/pkg/fields" // Required for Watching
     "k8s.io/apimachinery/pkg/types" // Required for Watching
     "sigs.k8s.io/controller-runtime/pkg/builder" // Required for Watching
     "sigs.k8s.io/controller-runtime/pkg/handler" // Required for Watching
@@ -238,12 +238,12 @@ const (
 )
 
 // Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
-func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, secret client.Object, log logr.Logger) []reconcile.Request {
+func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, secret client.Object) []reconcile.Request {
 	l := log.FromContext(ctx)
     // Retrieve the list of SecretSync names referencing the updated secret
     var secretSyncNames []string
     if err := r.Indexer.IndexField(ctx, &syncv1.SecretSync{}, secretField, secret.GetName(), &secretSyncNames); err != nil {
-        log.Error(err, "Failed to retrieve SecretSync objects referencing the secret", "Secret", secret.GetName())
+        l.Error(err, "Failed to retrieve SecretSync objects referencing the secret", "Secret", secret.GetName())
         return []reconcile.Request{}
     }
 
