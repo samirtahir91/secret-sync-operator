@@ -36,7 +36,6 @@ import (
 	syncv1 "secret-sync-operator/api/v1"
 
 	"k8s.io/apimachinery/pkg/fields" // Required for Watching
-	"sigs.k8s.io/controller-runtime/pkg/event"	// Required for Watching
     "sigs.k8s.io/controller-runtime/pkg/builder" // Required for Watching
     "sigs.k8s.io/controller-runtime/pkg/handler" // Required for Watching
     "sigs.k8s.io/controller-runtime/pkg/predicate" // Required for Watching
@@ -291,22 +290,9 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
             &corev1.Secret{},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
             builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-            builder.WithPredicates(
-                predicate.Funcs{
-                    CreateFunc: func(e event.CreateEvent) bool {
-                        return e.Meta.GetNamespace() == "default"
-                    },
-                    UpdateFunc: func(e event.UpdateEvent) bool {
-                        return e.MetaNew.GetNamespace() == "default"
-                    },
-                    DeleteFunc: func(e event.DeleteEvent) bool {
-                        return e.Meta.GetNamespace() == "default"
-                    },
-                    GenericFunc: func(e event.GenericEvent) bool {
-                        return e.Meta.GetNamespace() == "default"
-                    },
-                },
-            ),
+            builder.WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
+                return obj.GetNamespace() == "default"
+            })),
         ).
         Complete(r)
 }
