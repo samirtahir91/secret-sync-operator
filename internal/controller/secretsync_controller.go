@@ -237,15 +237,30 @@ const (
 )
 
 // Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
-func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, secret client.Object) []reconcile.Request {
-    l := log.FromContext(ctx)
-
-    var requests []reconcile.Request
+func (r *SecretSyncReconciler) findObjectsForSecret(o client.Object) []reconcile.Request {
+	l := log.FromContext(ctx)
+    // Convert the client.Object to a Secret object
+    secret, ok := o.(*corev1.Secret)
+    if !ok {
+        // Not a Secret object
+        return nil
+    }
 
     // Retrieve the list of SecretSync objects referencing the updated secret from the index
-    if err := r.Indexer.IndexField(ctx, &syncv1.SecretSync{}, secretField, secret.GetName()); err != nil {
+    secretSyncList := &syncv1.SecretSyncList{}
+    if err := r.Indexer.IndexField(context.Background(), secretSyncList, secretField, secret.GetName()); err != nil {
         l.Error(err, "Failed to retrieve SecretSync objects referencing the secret", "Secret", secret.GetName())
-        return requests
+        return nil
+    }
+
+    var requests []reconcile.Request
+    for _, ss := range secretSyncList.Items {
+        requests = append(requests, reconcile.Request{
+            NamespacedName: client.ObjectKey{
+                Name:      ss.GetName(),
+                Namespace: ss.GetNamespace(),
+            },
+        })
     }
 
     l.Info("Retrieved SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReconcileRequests", requests)
@@ -256,7 +271,6 @@ func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, secret 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
     if err := mgr.GetFieldIndexer().IndexField(context.Background(), &syncv1.SecretSync{}, secretField, func(rawObj client.Object) []string {
-        // Extract the secrets from the SecretSync Spec and return them for indexing
         secretSync := rawObj.(*syncv1.SecretSync)
         return secretSync.Spec.Secrets
     }); err != nil {
@@ -269,7 +283,7 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
         Watches(
             &source.Kind{Type: &corev1.Secret{}},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
-            builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+            // Add any necessary predicates here
         ).
         Complete(r)
 }
