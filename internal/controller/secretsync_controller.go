@@ -290,7 +290,7 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
         Watches(
             &source.Kind{Type: &corev1.Secret{}},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
-            // Add any necessary predicates here
+            builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
         ).
         Complete(r)
 }
