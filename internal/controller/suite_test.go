@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -73,6 +74,7 @@ var _ = BeforeSuite(func() {
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
 			fmt.Sprintf("1.28.3-%s-%s", runtime.GOOS, runtime.GOARCH)),
 	}
+	os.Setenv("SOURCE_NAMESPACE", "default")
 
 	var err error
 	// cfg is defined in this file globally.

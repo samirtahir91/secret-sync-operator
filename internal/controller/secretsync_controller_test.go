@@ -232,4 +232,43 @@ var _ = Describe("SecretSync controller", func() {
 		})
 	})
 
+	Context("When modifying a secret in the source namespace that is referenced by one or more SecretSyncs", func() {
+		It("Should trigger the reconciler to update the secret in the SecretSyncs namespaces", func() {
+			By("Modifying the data of secret1 in the source namespace")
+			ctx := context.Background()
+			// Get the secret from the destination namespace
+			secretKey := types.NamespacedName{Name: secret1, Namespace: sourceNamespace}
+			retrievedSecret := &corev1.Secret{}
+			err := k8sClient.Get(ctx, secretKey, retrievedSecret)
+			if err != nil {
+				// An unexpected error occurred
+				Fail(fmt.Sprintf("Failed to retrieve the secret %s from the sourceNamespace namespace: %v", secret1, err))
+				return
+			}
+			// Modify the data of the secret
+			modifiedData := map[string][]byte{"user": []byte("YmFycw==")}
+			retrievedSecret.Data = modifiedData
+			err = k8sClient.Update(ctx, retrievedSecret)
+			if err != nil {
+				// Failed to update the secret
+				Fail(fmt.Sprintf("Failed to modify the data of secret %s in the sourceNamespace namespace: %v", secret1, err))
+				return
+			}
+			By("Waiting for the reconciler to update the secret to its updated data")
+			timeout := 120 * time.Second
+			interval := 5 * time.Second
+			destSecretKey := types.NamespacedName{Name: secret1, Namespace: destinationNamespace}
+			destretrievedSecret := &corev1.Secret{}
+			Eventually(func() bool {
+				// Retrieve the secret again after reconciliation
+				err := k8sClient.Get(ctx, destSecretKey, destretrievedSecret)
+				if err != nil {
+					return false
+				}
+				// Check if the secret data has been updated
+				return reflect.DeepEqual(retrievedSecret.Data, destretrievedSecret.Data)
+			}, timeout, interval).Should(BeTrue(), "Failed to restore the secret to its original data within timeout")
+			// At this point, the secret has been successfully synced
+		})
+	})
 })
