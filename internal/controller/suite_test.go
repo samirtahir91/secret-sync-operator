@@ -61,8 +61,7 @@ var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 	ctx, cancel = context.WithCancel(context.TODO())
 
-	By("Setting the SOURCE_NAMESPACE environment variable")
-    os.Setenv("SOURCE_NAMESPACE", "default")
+	Expect(os.Setenv("SOURCE_NAMESPACE", "default")).To(Succeed())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
