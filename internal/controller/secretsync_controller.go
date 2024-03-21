@@ -45,7 +45,6 @@ import (
 // SecretSyncReconciler reconciles a SecretSync object
 type SecretSyncReconciler struct {
 	client.Client
-	Indexer client.FieldIndexer
 	Scheme *runtime.Scheme
 }
 
@@ -239,6 +238,7 @@ const (
 // Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
 func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o client.Object) []reconcile.Request {
 	l := log.FromContext(ctx)
+
     // Convert the client.Object to a Secret object
     secret, ok := o.(*corev1.Secret)
     if !ok {
@@ -246,13 +246,17 @@ func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o clien
         return nil
     }
 
-    // Retrieve the list of SecretSync objects referencing the updated secret from the index
+    // Prepare a list of SecretSync objects referencing the updated secret
     secretSyncList := &syncv1.SecretSyncList{}
-    if err := r.Indexer.IndexField(context.Background(), secretSyncList, secretField, secret.GetName()); err != nil {
-        l.Error(err, "Failed to retrieve SecretSync objects referencing the secret", "Secret", secret.GetName())
+    listOpts := &client.ListOptions{
+        FieldSelector: fields.OneTermEqualSelector(secretField, secret.GetName()),
+    }
+    if err := r.List(context.Background(), secretSyncList, listOpts); err != nil {
+        l.Error(err, "Failed to list SecretSync objects referencing the secret", "Secret", secret.GetName())
         return nil
     }
 
+    // Extract reconcile requests from the found SecretSync objects
     var requests []reconcile.Request
     for _, ss := range secretSyncList.Items {
         requests = append(requests, reconcile.Request{
@@ -266,6 +270,7 @@ func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o clien
     l.Info("Retrieved SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReconcileRequests", requests)
     return requests
 }
+
 
 
 // SetupWithManager sets up the controller with the Manager.
