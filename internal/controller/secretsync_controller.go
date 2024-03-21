@@ -41,7 +41,6 @@ import (
     "sigs.k8s.io/controller-runtime/pkg/handler" // Required for Watching
     "sigs.k8s.io/controller-runtime/pkg/predicate" // Required for Watching
     "sigs.k8s.io/controller-runtime/pkg/reconcile" // Required for Watching
-    "sigs.k8s.io/controller-runtime/pkg/source" // Required for Watching
 )
 
 // SecretSyncReconciler reconciles a SecretSync object
@@ -291,6 +290,6 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
             &corev1.Secret{},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
             builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-        )
+        ).
         Complete(r)
 }
