@@ -288,9 +288,9 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
         For(&syncv1.SecretSync{}).
         Owns(&corev1.Secret{}).
         Watches(
-            &source.Kind{Type: &corev1.Secret{}},
+            &corev1.Secret{},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
             builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-        ).Namespace("default").
+        )
         Complete(r)
 }
