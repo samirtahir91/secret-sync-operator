@@ -237,7 +237,7 @@ const (
 )
 
 // Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
-func (r *SecretSyncReconciler) findObjectsForSecret(o client.Object) []reconcile.Request {
+func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o client.Object) []reconcile.Request {
 	l := log.FromContext(ctx)
     // Convert the client.Object to a Secret object
     secret, ok := o.(*corev1.Secret)
