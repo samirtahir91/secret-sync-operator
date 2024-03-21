@@ -44,6 +44,25 @@ import (
 
 )
 
+const (
+	// Used in indexing SecretSync objects
+    secretField = ".spec.secrets"
+)
+
+// source namespace where secrets are synced from
+var sourceNamespace string
+
+// set the source namespace from env var
+func init() {
+    // Read the source namespace from environment variable
+    sourceNamespace = os.Getenv("SOURCE_NAMESPACE")
+    if sourceNamespace == "" {
+        // Handle case where environment variable is not set
+        panic("SOURCE_NAMESPACE environment variable not set")
+    }
+}
+
+
 // SecretSyncReconciler reconciles a SecretSync object
 type SecretSyncReconciler struct {
 	client.Client
@@ -72,14 +91,6 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		l.Error(err, "Failed to get SecretSync")
 		return ctrl.Result{}, err
 	}
-
-	// Read the source namespace from environment variable
-	sourceNamespace := "default"
-	//sourceNamespace := os.Getenv("SOURCE_NAMESPACE")
-	//if sourceNamespace == "" {
-	//	// Handle case where environment variable is not set
-	//	return ctrl.Result{}, errors.New("SOURCE_NAMESPACE environment variable not set")
-	//}
 
 	// Call the function to delete unreferenced secrets
 	if err := r.deleteUnreferencedSecrets(ctx, secretSync); err != nil {
@@ -234,10 +245,6 @@ func (r *SecretSyncReconciler) deleteUnreferencedSecrets(ctx context.Context, se
 	return nil
 }
 
-const (
-    secretField = ".spec.secrets"
-)
-
 // Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
 func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o client.Object) []reconcile.Request {
 	l := log.FromContext(ctx)
@@ -270,7 +277,13 @@ func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o clien
         })
     }
 
-    l.Info("Retrieved SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReconcileRequests", requests)
+    if len(requests) == 0 {
+        // Log when there are no matching SecretSync objects to the secret
+        l.Info("No matching SecretSync objects found for the secret", "Secret", secret.GetName())
+    } else {
+        l.Info("Retrieved SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReconcileRequests", requests)
+    }
+
     return requests
 }
 
@@ -279,15 +292,15 @@ func defaultNamespacePredicate() predicate.Predicate {
     return predicate.Funcs{
         CreateFunc: func(e event.CreateEvent) bool {
             // Filter out create events not in the default namespace
-            return e.Object.GetNamespace() == "default"
+            return e.Object.GetNamespace() == sourceNamespace
         },
         UpdateFunc: func(e event.UpdateEvent) bool {
             // Filter out update events not in the default namespace
-            return e.ObjectNew.GetNamespace() == "default"
+            return e.ObjectNew.GetNamespace() == sourceNamespace
         },
         DeleteFunc: func(e event.DeleteEvent) bool {
             // Filter out delete events not in the default namespace
-            return e.Object.GetNamespace() == "default"
+            return e.Object.GetNamespace() == sourceNamespace
         },
     }
 }
@@ -302,8 +315,9 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
     }
 
     return ctrl.NewControllerManagedBy(mgr).
-        For(&syncv1.SecretSync{}).
-        Owns(&corev1.Secret{}).
+        For(&syncv1.SecretSync{}).	// Watch SecretSyncs
+        Owns(&corev1.Secret{}).	// Watch secrets owned by SecretSyncs
+		// Watch secrets in the sourceNamespace using on create, update and delete events
         Watches(
             &corev1.Secret{},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
