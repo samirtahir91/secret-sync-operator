@@ -77,8 +77,10 @@ var _ = BeforeSuite(func() {
 
 	var err error
 
-	err = os.Setenv("SOURCE_NAMESPACE", "default")
-	Expect(err).NotTo(HaveOccurred())
+	err := os.Setenv("SOURCE_NAMESPACE", "default")
+	if err != nil {
+		panic(err)
+	}
 
 	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
