@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/samirtahir91/secret-sync-operator/badge.svg)](https://coveralls.io/github/samirtahir91/secret-sync-operator)
+
 # secret-sync-operator
 This is a Kubernetes operator that will sync secrets from a defined source namespace to any number of destination namespaces.
 
