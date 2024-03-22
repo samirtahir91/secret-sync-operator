@@ -53,9 +53,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.20"
-      - name: Generate the coverage output
-        run: go tool cover -html=coverage.out -o coverage.html
       - name: Send the coverage output
         uses: shogo82148/actions-goveralls@v1
         with:
-          path-to-profile: coverage.out
+          path-to-profile: cover.out
