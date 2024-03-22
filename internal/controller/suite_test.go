@@ -19,10 +19,10 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
-	"os"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
