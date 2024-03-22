@@ -77,7 +77,7 @@ var _ = BeforeSuite(func() {
 
 	if err := os.Setenv("SOURCE_NAMESPACE", "default"); err != nil {
 		// Handle the error, such as logging it or returning it from your function
-		logf.Error(err, "Failed to set SOURCE_NAMESPACE environment variable")
+		log.Log.Error(err, "Failed to set SOURCE_NAMESPACE environment variable")
 		return err
 	}	
 
