@@ -74,15 +74,9 @@ var _ = BeforeSuite(func() {
 		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
 			fmt.Sprintf("1.28.3-%s-%s", runtime.GOOS, runtime.GOARCH)),
 	}
+	os.Setenv("SOURCE_NAMESPACE", "default")
 
 	var err error
-
-	// Ignore the error check for os.Setenv
-	err = os.Setenv("SOURCE_NAMESPACE", "default")
-	if err != nil {
-		fmt.Println("Failed to set SOURCE_NAMESPACE environment variable:", err)
-	}
-
 	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
