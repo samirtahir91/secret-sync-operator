@@ -1,4 +1,4 @@
-[![Unit tests](https://github.com/samirtahir91/secret-sync-operator/actions/workflows/tests.yml/badge.svg)](https://github.com/samirtahir91/secret-sync-operator/actions/workflows/tests.yml)
+[![Unit tests](https://github.com/samirtahir91/secret-sync-operator/actions/workflows/tests.yaml/badge.svg)](https://github.com/samirtahir91/secret-sync-operator/actions/workflows/tests.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/samirtahir91/secret-sync-operator/badge.svg)](https://coveralls.io/github/samirtahir91/secret-sync-operator)
 
 # secret-sync-operator
