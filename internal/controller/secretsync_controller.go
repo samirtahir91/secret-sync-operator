@@ -28,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"github.com/go-logr/logr"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,8 +49,8 @@ const (
 )
 
 var (
-	// source namespace where secrets are synced from
-	sourceNamespace string 
+	sourceNamespace string // source namespace where secrets are synced from
+	recLog   = ctrl.Log.WithName("reconciler") // logger
 )
 
 // SecretSyncReconciler reconciles a SecretSync object
@@ -68,19 +67,18 @@ type SecretSyncReconciler struct {
 
 // Reconcile
 func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	lc := log.FromContext(ctx).WithName("secret-sync-system")
-	l := log.WithName("secret-sync-system")
-	lc.Info("Enter Reconcile", "req", req)
+	log := recLog.FromContext(ctx)
+	log.Info("Enter Reconcile", "req", req)
 
 	// Fetch the SecretSync instance
 	secretSync := &syncv1.SecretSync{}
 	err := r.Get(ctx, req.NamespacedName, secretSync)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			l.Info("SecretSync resource not found. Ignoring since object must be deleted.")
+			recLog.Info("SecretSync resource not found. Ignoring since object must be deleted.")
 			return ctrl.Result{}, nil
 		}
-		lc.Error(err, "Failed to get SecretSync")
+		log.Error(err, "Failed to get SecretSync")
 		return ctrl.Result{}, err
 	}
 
@@ -108,11 +106,11 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if err := r.Status().Update(ctx, secretSync); err != nil {
 			// Handle conflict error due to outdated version
 			if apierrors.IsConflict(err) {
-				l.Info("Conflict: SecretSync resource has been modified, retrying...")
+				recLog.Info("Conflict: SecretSync resource has been modified, retrying...")
 			}
-			lc.Error(err, "Unable to update secretSync's status", "status", syncStatus)
+			log.Error(err, "Unable to update secretSync's status", "status", syncStatus)
 		} else {
-			l.Info("secretSync's status updated", "status", syncStatus)
+			recLog.Info("secretSync's status updated", "status", syncStatus)
 		}
 	}()
 
@@ -121,9 +119,9 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 // Validate the source secret against the dentination namespace and either create or update it calling the relative functions.
 func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv1.SecretSync, secretName, sourceNamespace string) error {
-	lc := log.FromContext(ctx).WithName("secret-sync-system")
+	log := recLog.FromContext(ctx)
 	l := log.WithName("secret-sync-system")
-	l.Info("Processing", "Namespace", sourceNamespace, "Secret", secretName)
+	recLog.Info("Processing", "Namespace", sourceNamespace, "Secret", secretName)
 
 	// Get the source secret
 	sourceSecret := &corev1.Secret{}
@@ -133,10 +131,10 @@ func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv
 	}
 	if err := r.Get(ctx, sourceSecretKey, sourceSecret); err != nil {
 		if apierrors.IsNotFound(err) {
-			l.Info("Source secret not found", "Namespace", sourceNamespace, "Secret", secretName)
+			recLog.Info("Source secret not found", "Namespace", sourceNamespace, "Secret", secretName)
 			return nil
 		}
-		lc.Error(err, "Failed to get source secret", "Namespace", sourceNamespace, "Secret", secretName)
+		log.Error(err, "Failed to get source secret", "Namespace", sourceNamespace, "Secret", secretName)
 		return err
 	}
 
@@ -151,7 +149,7 @@ func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv
 			// Create the destination secret
 			return r.createDestinationSecret(ctx, secretSync, sourceSecret)
 		}
-		lc.Error(err, "Failed to get destination secret", "Namespace", secretSync.Namespace, "Secret", secretName)
+		log.Error(err, "Failed to get destination secret", "Namespace", secretSync.Namespace, "Secret", secretName)
 		return err
 	}
 
@@ -161,15 +159,15 @@ func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv
 		return r.updateDestinationSecret(ctx, secretSync, destinationSecret, sourceSecret)
 	}
 	// Destination secret is already up to date
-	l.Info("Destination secret is already up to date", "Namespace", secretSync.Namespace, "Secret", secretName)
+	recLog.Info("Destination secret is already up to date", "Namespace", secretSync.Namespace, "Secret", secretName)
 	return nil
 }
 
 // Create a copy of a secret from the source Namespace in the destination Namespace
 func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, secretSync *syncv1.SecretSync, sourceSecret *corev1.Secret) error {
-	lc := log.FromContext(ctx).WithName("secret-sync-system")
+	log := recLog.FromContext(ctx)
 	l := log.WithName("secret-sync-system")
-	l.Info("Creating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
+	recLog.Info("Creating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
 
 	destinationSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -180,11 +178,11 @@ func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, secr
 	}
 	// Set owner reference to SecretSync object
 	if err := controllerutil.SetControllerReference(secretSync, destinationSecret, r.Scheme); err != nil {
-		lc.Error(err, "Failed to set owner reference for destination secret")
+		log.Error(err, "Failed to set owner reference for destination secret")
 		return err
 	}
 	if err := r.Create(ctx, destinationSecret); err != nil {
-		lc.Error(err, "Failed to create Secret in the destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
+		log.Error(err, "Failed to create Secret in the destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
 		return err
 	}
 	return nil
@@ -192,18 +190,18 @@ func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, secr
 
 // Update secrets in a destination namespace with the data from the source namespace
 func (r *SecretSyncReconciler) updateDestinationSecret(ctx context.Context, secretSync *syncv1.SecretSync, destinationSecret, sourceSecret *corev1.Secret) error {
-	lc := log.FromContext(ctx).WithName("secret-sync-system")
+	log := recLog.FromContext(ctx)
 	l := log.WithName("secret-sync-system")
-	l.Info("Updating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
+	recLog.Info("Updating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
 
 	destinationSecret.Data = sourceSecret.Data // Update data from source to destination
 	// Set owner reference to SecretSync object
 	if err := controllerutil.SetControllerReference(secretSync, destinationSecret, r.Scheme); err != nil {
-		lc.Error(err, "Failed to set owner reference for destination secret")
+		log.Error(err, "Failed to set owner reference for destination secret")
 		return err
 	}
 	if err := r.Update(ctx, destinationSecret); err != nil {
-		lc.Error(err, "Failed to update Secret in the destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
+		log.Error(err, "Failed to update Secret in the destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
 		return err
 	}
 	return nil
@@ -211,7 +209,7 @@ func (r *SecretSyncReconciler) updateDestinationSecret(ctx context.Context, secr
 
 // Delete unreferenced secrets owned by the SecretSync object
 func (r *SecretSyncReconciler) deleteUnreferencedSecrets(ctx context.Context, secretSync *syncv1.SecretSync) error {
-	lc := log.FromContext(ctx).WithName("secret-sync-system")
+	log := recLog.FromContext(ctx)
 	l := log.WithName("secret-sync-system")
 
 	// Fetch secrets from the source namespace (same as SecretSync namespace)
@@ -232,12 +230,12 @@ func (r *SecretSyncReconciler) deleteUnreferencedSecrets(ctx context.Context, se
 		if _, exists := referencedSecrets[secret.Name]; !exists && metav1.IsControlledBy(&secret, secretSync) {
 			// Secret exists in cluster, is not in the SecretSync object's list of secrets,
 			// and is owned by the SecretSync object, delete it
-			l.Info("Deleting unreferenced secret", "Namespace", secret.Namespace, "Name", secret.Name)
+			recLog.Info("Deleting unreferenced secret", "Namespace", secret.Namespace, "Name", secret.Name)
 			if err := r.Delete(ctx, &secret); err != nil {
-				lc.Error(err, "Failed to delete unreferenced secret", "Namespace", secret.Namespace, "Name", secret.Name)
+				log.Error(err, "Failed to delete unreferenced secret", "Namespace", secret.Namespace, "Name", secret.Name)
 				return err
 			}
-			l.Info("Deleted unreferenced secret", "Namespace", secret.Namespace, "Name", secret.Name)
+			recLog.Info("Deleted unreferenced secret", "Namespace", secret.Namespace, "Name", secret.Name)
 		}
 	}
 
@@ -246,7 +244,7 @@ func (r *SecretSyncReconciler) deleteUnreferencedSecrets(ctx context.Context, se
 
 // Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
 func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o client.Object) []reconcile.Request {
-	lc := log.FromContext(ctx).WithName("secret-sync-system")
+	log := recLog.FromContext(ctx)
 	l := log.WithName("secret-sync-system")
 
     // Convert the client.Object to a Secret object
@@ -262,7 +260,7 @@ func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o clien
         FieldSelector: fields.OneTermEqualSelector(secretField, secret.GetName()),
     }
     if err := r.List(context.Background(), secretSyncList, listOpts); err != nil {
-        lc.Error(err, "Failed to list SecretSync objects referencing the secret", "Secret", secret.GetName())
+        log.Error(err, "Failed to list SecretSync objects referencing the secret", "Secret", secret.GetName())
         return nil
     }
 
@@ -279,9 +277,9 @@ func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o clien
 
     if len(requests) == 0 {
         // Log when there are no matching SecretSync objects to the secret
-        l.Info("No matching SecretSync objects found for the secret", "Secret", secret.GetName())
+        recLog.Info("No matching SecretSync objects found for the secret", "Secret", secret.GetName())
     } else {
-        l.Info("Retrieved SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReconcileRequests", requests)
+        recLog.Info("Retrieved SecretSync objects referencing the secret", "Secret", secret.GetName(), "ReconcileRequests", requests)
     }
 
     return requests
