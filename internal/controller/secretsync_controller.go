@@ -118,7 +118,7 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // Validate the source secret against the dentination namespace and either create or update it calling the relative functions.
 func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv1.SecretSync, secretName, sourceNamespace string) error {
 	logctx := log.FromContext(ctx)
-	log.Log.Info("Processing", "Namespace", sourceNamespace, "Secret", secretName)
+	log.Log.Info("Processing", "Source Namespace", sourceNamespace, "Secret", secretName)
 
 	// Get the source secret
 	sourceSecret := &corev1.Secret{}
@@ -128,10 +128,10 @@ func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv
 	}
 	if err := r.Get(ctx, sourceSecretKey, sourceSecret); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Log.Info("Source secret not found", "Namespace", sourceNamespace, "Secret", secretName)
+			log.Log.Info("Source secret not found", "Source Namespace", sourceNamespace, "Secret", secretName)
 			return nil
 		}
-		logctx.Error(err, "Failed to get source secret", "Namespace", sourceNamespace, "Secret", secretName)
+		logctx.Error(err, "Failed to get source secret", "Source Namespace", sourceNamespace, "Secret", secretName)
 		return err
 	}
 
