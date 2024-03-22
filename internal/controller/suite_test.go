@@ -76,6 +76,10 @@ var _ = BeforeSuite(func() {
 	}
 
 	var err error
+
+	err = os.Setenv("SOURCE_NAMESPACE", "default")
+	Expect(err).NotTo(HaveOccurred())
+
 	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
