@@ -76,10 +76,6 @@ var _ = BeforeSuite(func() {
 	}
 
 	var err error
-	// Expect that setting the environment variable succeeds
-	Expect(os.Setenv("SOURCE_NAMESPACE", "default")).To(Succeed())
-	Expect(err).NotTo(HaveOccurred())
-	
 	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
