@@ -300,11 +300,12 @@ func defaultNamespacePredicate() predicate.Predicate {
 func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
     // Read the source namespace from environment variable
-    sourceNamespace = os.Getenv("SOURCE_NAMESPACE")
-    if sourceNamespace == "" {
-        // Handle case where environment variable is not set
-        panic("SOURCE_NAMESPACE environment variable not set")
-    }
+	sourceNamespace = "default"
+    //sourceNamespace = os.Getenv("SOURCE_NAMESPACE")
+    //if sourceNamespace == "" {
+    //    // Handle case where environment variable is not set
+    //    panic("SOURCE_NAMESPACE environment variable not set")
+    //}
 
 	/*
 		The `spec.secrets` field must be indexed by the manager, so that we will be able to lookup `SecretSyncs` by a referenced `Secret` name.
