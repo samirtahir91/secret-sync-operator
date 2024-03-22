@@ -77,9 +77,11 @@ var _ = BeforeSuite(func() {
 
 	var err error
 
-	errd := os.Setenv("SOURCE_NAMESPACE", "default")
-	if errd != nil {
-		fmt.Println("Failed to set SOURCE_NAMESPACE environment variable:", errd)
+	// Ignore the error check for os.Setenv
+	// nolint:errcheck
+	err = os.Setenv("SOURCE_NAMESPACE", "default")
+	if err != nil {
+		fmt.Println("Failed to set SOURCE_NAMESPACE environment variable:", err)
 	}
 
 	// cfg is defined in this file globally.
