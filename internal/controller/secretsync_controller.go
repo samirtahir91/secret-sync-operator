@@ -280,19 +280,19 @@ func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o clien
     return requests
 }
 
-// Define a predicate function to filter events for the default namespace
-func defaultNamespacePredicate() predicate.Predicate {
+// Define a predicate function to filter events for the source namespace
+func sourceNamespacePredicate() predicate.Predicate {
     return predicate.Funcs{
         CreateFunc: func(e event.CreateEvent) bool {
-            // Filter out create events not in the default namespace
+            // Filter out create events not in the source namespace
             return e.Object.GetNamespace() == sourceNamespace
         },
         UpdateFunc: func(e event.UpdateEvent) bool {
-            // Filter out update events not in the default namespace
+            // Filter out update events not in the source namespace
             return e.ObjectNew.GetNamespace() == sourceNamespace
         },
         DeleteFunc: func(e event.DeleteEvent) bool {
-            // Filter out delete events not in the default namespace
+            // Filter out delete events not in the source namespace
             return e.Object.GetNamespace() == sourceNamespace
         },
     }
@@ -328,7 +328,7 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
             &corev1.Secret{},
             handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
             builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-			builder.WithPredicates(defaultNamespacePredicate()),
+			builder.WithPredicates(sourceNamespacePredicate()),
         ).
         Complete(r)
 }
