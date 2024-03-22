@@ -66,7 +66,7 @@ type SecretSyncReconciler struct {
 // Reconcile
 func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logctx := log.FromContext(ctx)
-	logctx.Info("Enter Reconcile", "req", req)
+	logctx.Info("\nEnter Reconcile", "req", req)
 
 	// Fetch the SecretSync instance
 	secretSync := &syncv1.SecretSync{}
