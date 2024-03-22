@@ -78,8 +78,7 @@ var _ = BeforeSuite(func() {
 	var err error
 
 	// Ignore the error check for os.Setenv
-	// nolint:errcheck
-	err = os.Setenv("SOURCE_NAMESPACE", "default")
+	err = os.Setenv("SOURCE_NAMESPACE", "default") //nolint:all
 	if err != nil {
 		fmt.Println("Failed to set SOURCE_NAMESPACE environment variable:", err)
 	}
