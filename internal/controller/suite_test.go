@@ -75,10 +75,11 @@ var _ = BeforeSuite(func() {
 			fmt.Sprintf("1.28.3-%s-%s", runtime.GOOS, runtime.GOARCH)),
 	}
 
+	var err error
 	// Expect that setting the environment variable succeeds
 	Expect(os.Setenv("SOURCE_NAMESPACE", "default")).To(Succeed())
-
-	var err error
+	Expect(err).NotTo(HaveOccurred())
+	
 	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
