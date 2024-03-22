@@ -112,6 +112,8 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}()
 
+	log.Log.Info("Reconciliation completed successfully", "req", req)
+
 	return ctrl.Result{}, nil
 }
 
