@@ -77,7 +77,7 @@ var _ = BeforeSuite(func() {
 
 	var err error
 
-	err := os.Setenv("SOURCE_NAMESPACE", "default")
+	err = os.Setenv("SOURCE_NAMESPACE", "default")
 	if err != nil {
 		panic(err)
 	}
