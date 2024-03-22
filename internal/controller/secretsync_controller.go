@@ -109,7 +109,7 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			}
 			logctx.Error(err, "Unable to update secretSync's status", "status", syncStatus)
 		} else {
-			log.Log.Info("SecretSync's status updated", "SecretSync", req.name, "status", syncStatus)
+			log.Log.Info("SecretSync's status updated", "SecretSync", req.Name, "status", syncStatus)
 			log.Log.Info("Reconciliation completed successfully", "req", req)
 		}
 	}()
