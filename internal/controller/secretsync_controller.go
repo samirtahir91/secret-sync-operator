@@ -66,7 +66,7 @@ type SecretSyncReconciler struct {
 // Reconcile
 func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logctx := log.FromContext(ctx)
-	logctx.Info("\n\nEnter Reconcile", "req", req)
+	logctx.Info("Enter Reconcile", "req", req)
 
 	// Fetch the SecretSync instance
 	secretSync := &syncv1.SecretSync{}
@@ -98,7 +98,7 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		syncStatus := true
 		if err != nil {
 			syncStatus = false
-			logctx.Error(err, "Reconciliation failed", "req", req)
+			logctx.Error(err, "Reconciliation failed", "req", req, "\n")
 		}
 		secretSync.Status.Synced = syncStatus
 		// Update the status of the SecretSync resource with optimistic locking
@@ -107,10 +107,10 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			if apierrors.IsConflict(err) {
 				log.Log.Info("Conflict: SecretSync resource has been modified, retrying...")
 			}
-			logctx.Error(err, "Unable to update SecretSync's status", "SecretSync", req.Name, "status", syncStatus)
+			logctx.Error(err, "Unable to update SecretSync's status", "SecretSync", req.Name, "status", syncStatus, "\n")
 		} else {
 			log.Log.Info("SecretSync's status updated", "SecretSync", req.Name, "status", syncStatus)
-			log.Log.Info("Reconciliation completed successfully", "req", req)
+			log.Log.Info("Reconciliation completed successfully", "req", req, "\n")
 		}
 	}()
 
