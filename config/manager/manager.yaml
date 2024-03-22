@@ -70,7 +70,7 @@ spec:
         - /manager
         args:
         - --leader-elect
-        image: secret-sync-operator:latest
+        image: samirtahir91076/secret-sync-operator:latest
         imagePullPolicy: Never
         name: manager
         securityContext:
