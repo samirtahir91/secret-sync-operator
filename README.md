@@ -18,7 +18,7 @@ Key features:
 ## Example SecretSync object
 Below example will setup a sync for `secret1` and `secret2` in the namespace `team-1`, assuming the controller has been configured with a source namespace `default`, the controller will reconcile the secrets into the `team-1` namespace (copying from the `default` namespace). \
 Any changes to the secrets will trigger a sync/reconile to keep the secrets in sync with the `default` namespace.
-```
+```sh
 kubectl apply -f - <<EOF
 apiVersion: sync.samir.io/v1
 kind: SecretSync
@@ -35,7 +35,7 @@ EOF
 > :warning: **Do not have duplicate secrets for `SecretSync` objects created in the same namespace**: It is recommended to have a single `SecretSync` object per namespace. \
 > The controller will **not** check for this and can cause undesired behaviour if multiple `SecretSync` objects are attempting to sync the same secrets in the same namespace. \
 > You could limit the count for SecretSync objects to 1 using a Resource Quota with the object quota, i.e. for namespace `team-1`
-> ```sh
+> ```yaml
 > apiVersion: v1
 >kind: ResourceQuota
 >metadata:
@@ -87,6 +87,7 @@ Current integration tests cover the scenarios:
 - Removing a secret from a `SecretSync` object and checking the secret has been deleted from a namespace
 - Deleting a secret owned by a `SecretSync` object causes the reconilation of the secret to be re-created.
 - Modifying a secret's data that is owned by a `SecretSync` object causes the reconcilation of the secret to be updated with the source secret's data.
+- Modifying a source namespace secret referenced by one or more `SecretSync` object causes the reconcilation of the secret to be updated in affected namespaces.
 
 **Run the controller in the foreground for testing:**
 ```sh
