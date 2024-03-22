@@ -326,7 +326,6 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 			builder.WithPredicates(sourceNamespacePredicate()),
 		).
 		Complete(r)
