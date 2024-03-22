@@ -75,11 +75,8 @@ var _ = BeforeSuite(func() {
 			fmt.Sprintf("1.28.3-%s-%s", runtime.GOOS, runtime.GOARCH)),
 	}
 
-	if err := os.Setenv("SOURCE_NAMESPACE", "default"); err != nil {
-		// Handle the error, such as logging it or returning it from your function
-		log.Log.Error(err, "Failed to set SOURCE_NAMESPACE environment variable")
-		return err
-	}	
+	// Expect that setting the environment variable succeeds
+	Expect(os.Setenv("SOURCE_NAMESPACE", "default")).To(Succeed())
 
 	var err error
 	// cfg is defined in this file globally.
