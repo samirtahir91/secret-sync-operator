@@ -107,12 +107,11 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			if apierrors.IsConflict(err) {
 				log.Log.Info("Conflict: SecretSync resource has been modified, retrying...")
 			}
-			logctx.Error(err, "Unable to update SecretSync's status", "SecretSync", req.Name, "status", syncStatus)
+			logctx.Error(err, "Unable to update SecretSync's status", "SecretSync", req.Name, "Namespace", req.Namespace, "status", syncStatus)
 		} else {
-			log.Log.Info("SecretSync's status updated", "SecretSync", req.Name, "status", syncStatus)
-			log.Log.Info("Reconciliation completed successfully", "SecretSync", req.Name, "Namespace", req.Namespace)
+			log.Log.Info("SecretSync's status updated", "SecretSync", req.Name, "Namespace", req.Namespace, "status", syncStatus)
 		}
-		log.Log.Info("End Reconciliation\n")
+		log.Log.Info("End Reconcile\n")
 	}()
 
 	return ctrl.Result{}, nil
