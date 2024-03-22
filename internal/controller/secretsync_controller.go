@@ -120,7 +120,6 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // Validate the source secret against the dentination namespace and either create or update it calling the relative functions.
 func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv1.SecretSync, secretName, sourceNamespace string) error {
 	log := recLog.FromContext(ctx)
-	l := log.WithName("secret-sync-system")
 	recLog.Info("Processing", "Namespace", sourceNamespace, "Secret", secretName)
 
 	// Get the source secret
@@ -166,7 +165,6 @@ func (r *SecretSyncReconciler) syncSecret(ctx context.Context, secretSync *syncv
 // Create a copy of a secret from the source Namespace in the destination Namespace
 func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, secretSync *syncv1.SecretSync, sourceSecret *corev1.Secret) error {
 	log := recLog.FromContext(ctx)
-	l := log.WithName("secret-sync-system")
 	recLog.Info("Creating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
 
 	destinationSecret := &corev1.Secret{
@@ -191,7 +189,7 @@ func (r *SecretSyncReconciler) createDestinationSecret(ctx context.Context, secr
 // Update secrets in a destination namespace with the data from the source namespace
 func (r *SecretSyncReconciler) updateDestinationSecret(ctx context.Context, secretSync *syncv1.SecretSync, destinationSecret, sourceSecret *corev1.Secret) error {
 	log := recLog.FromContext(ctx)
-	l := log.WithName("secret-sync-system")
+	
 	recLog.Info("Updating Secret in destination namespace", "Namespace", secretSync.Namespace, "Secret", sourceSecret.Name)
 
 	destinationSecret.Data = sourceSecret.Data // Update data from source to destination
@@ -210,7 +208,6 @@ func (r *SecretSyncReconciler) updateDestinationSecret(ctx context.Context, secr
 // Delete unreferenced secrets owned by the SecretSync object
 func (r *SecretSyncReconciler) deleteUnreferencedSecrets(ctx context.Context, secretSync *syncv1.SecretSync) error {
 	log := recLog.FromContext(ctx)
-	l := log.WithName("secret-sync-system")
 
 	// Fetch secrets from the source namespace (same as SecretSync namespace)
 	sourceSecrets := &corev1.SecretList{}
@@ -245,7 +242,6 @@ func (r *SecretSyncReconciler) deleteUnreferencedSecrets(ctx context.Context, se
 // Get SecretSyncs that reference the Secret from a source namespace and trigger reconcile for each affected
 func (r *SecretSyncReconciler) findObjectsForSecret(ctx context.Context, o client.Object) []reconcile.Request {
 	log := recLog.FromContext(ctx)
-	l := log.WithName("secret-sync-system")
 
     // Convert the client.Object to a Secret object
     secret, ok := o.(*corev1.Secret)
