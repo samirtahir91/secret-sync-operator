@@ -98,6 +98,7 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		syncStatus := true
 		if err != nil {
 			syncStatus = false
+			logctx.Error("Reconciliation failed", "req", req)
 		}
 		secretSync.Status.Synced = syncStatus
 		// Update the status of the SecretSync resource with optimistic locking
@@ -109,10 +110,9 @@ func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			logctx.Error(err, "Unable to update secretSync's status", "status", syncStatus)
 		} else {
 			log.Log.Info("secretSync's status updated", "status", syncStatus)
+			log.Log.Info("Reconciliation completed successfully", "req", req)
 		}
 	}()
-
-	log.Log.Info("Reconciliation completed successfully", "req", req)
 
 	return ctrl.Result{}, nil
 }
