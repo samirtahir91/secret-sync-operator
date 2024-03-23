@@ -360,7 +360,7 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Watch SecretSyncs
 		For(&syncv1.SecretSync{}).
-		// Watch secrets owned by SecretSyncs
+		// Watch secrets owned by SecretSyncs.
 		Owns(&corev1.Secret{}, builder.WithPredicates(r.destinationNamespacePredicate(ctx))).
 		// Watch secrets in the sourceNamespace using on create, update and delete events
 		Watches(
