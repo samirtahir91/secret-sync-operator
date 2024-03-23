@@ -2,7 +2,6 @@ on:
   push:
     branches:
       - "main"
-      - "multi-platform-build"
 
 env:
   REGISTRY_IMAGE: samirtahir91076/secret-sync-operator
