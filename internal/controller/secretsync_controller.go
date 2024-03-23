@@ -358,7 +358,8 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&syncv1.SecretSync{}). // Watch SecretSyncs
+		// Watch SecretSyncs
+		For(&syncv1.SecretSync{}).
 		// Watch secrets owned by SecretSyncs
 		Owns(&corev1.Secret{}, builder.WithPredicates(r.destinationNamespacePredicate(ctx))).
 		// Watch secrets in the sourceNamespace using on create, update and delete events
