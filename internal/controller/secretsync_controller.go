@@ -360,18 +360,12 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&syncv1.SecretSync{}). // Watch SecretSyncs
 		// Watch secrets owned by SecretSyncs
-		Owns(
-			&corev1.Secret{},
-			builder.WithPredicates(r.destinationNamespacePredicate(ctx)), // call predicate to check if the secret data changed
-		).
+		Owns(&corev1.Secret{}, builder.WithPredicates(r.destinationNamespacePredicate(ctx))).
 		// Watch secrets in the sourceNamespace using on create, update and delete events
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
-			builder.WithPredicates(
-				predicate.ResourceVersionChangedPredicate{},
-				sourceNamespacePredicate()
-			),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, sourceNamespacePredicate()),
 		).
 		Complete(r)
 }
