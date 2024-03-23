@@ -65,7 +65,8 @@ type SecretSyncReconciler struct {
 // Reconcile
 func (r *SecretSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logctx := log.FromContext(ctx)
-	logctx.Info("Enter Reconcile", "req", req)
+	//logctx.Info("Enter Reconcile", "req", req)
+	log.Log.Info("Enter Reconcile", "SecretSync", req.Name, "Namespace", req.Namespace)
 
 	// Fetch the SecretSync instance
 	secretSync := &syncv1.SecretSync{}
@@ -287,12 +288,47 @@ func sourceNamespacePredicate() predicate.Predicate {
 			return e.Object.GetNamespace() == sourceNamespace
 		},
 		UpdateFunc: func(e event.UpdateEvent) bool {
+			// Ignore update events where the old and new object are identical
+			if reflect.DeepEqual(e.ObjectOld, e.ObjectNew) {
+				log.Log.Info("UpdateEvent: No changes in revision")
+			}
 			// Filter out update events not in the source namespace
+			if e.ObjectNew.GetNamespace() == sourceNamespace {
+				log.Log.Info("UpdateEvent", "Source Namespace", e.ObjectNew.GetNamespace(), "Secret", e.ObjectNew.GetName(), "Old ResourceVersion", e.ObjectOld.GetResourceVersion(), "New ResourceVersion", e.ObjectNew.GetResourceVersion())
+			}
 			return e.ObjectNew.GetNamespace() == sourceNamespace
 		},
 		DeleteFunc: func(e event.DeleteEvent) bool {
 			// Filter out delete events not in the source namespace
 			return e.Object.GetNamespace() == sourceNamespace
+		},
+	}
+}
+
+// Define a predicate function to filter out reconciles for unchanged secrets
+func (r *SecretSyncReconciler) destinationNamespacePredicate(ctx context.Context) predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			logctx := log.FromContext(ctx)
+
+			// Fetch objects
+			newSecret := &corev1.Secret{}
+			sourceSecret := &corev1.Secret{}
+			if err := r.Get(ctx, client.ObjectKey{Namespace: e.ObjectNew.GetNamespace(), Name: e.ObjectNew.GetName()}, newSecret); err != nil {
+				logctx.Error(err, "Failed to get new secret", "Namespace", e.ObjectNew.GetNamespace(), "Name", e.ObjectNew.GetName())
+				return false
+			}
+			if err := r.Get(ctx, client.ObjectKey{Namespace: sourceNamespace, Name: e.ObjectNew.GetName()}, sourceSecret); err != nil {
+				logctx.Error(err, "Failed to get source secret", "Namespace", sourceNamespace, "Name", e.ObjectNew.GetName())
+				return false
+			}
+
+			// Ignore update events where the source secret data and destination secret data are identical
+			if reflect.DeepEqual(sourceSecret.Data, newSecret.Data) {
+				return false
+			} else {
+				return true
+			}
 		},
 	}
 }
@@ -319,14 +355,18 @@ func (r *SecretSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	ctx := context.Background()
+
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&syncv1.SecretSync{}). // Watch SecretSyncs
-		Owns(&corev1.Secret{}).    // Watch secrets owned by SecretSyncs
+		// Watch SecretSyncs
+		For(&syncv1.SecretSync{}).
+		// Watch secrets owned by SecretSyncs.
+		Owns(&corev1.Secret{}, builder.WithPredicates(r.destinationNamespacePredicate(ctx))).
 		// Watch secrets in the sourceNamespace using on create, update and delete events
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.findObjectsForSecret),
-			builder.WithPredicates(sourceNamespacePredicate()),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}, sourceNamespacePredicate()),
 		).
 		Complete(r)
 }
