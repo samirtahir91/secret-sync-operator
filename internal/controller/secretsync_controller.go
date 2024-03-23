@@ -315,11 +315,11 @@ func (r *SecretSyncReconciler) destinationNamespacePredicate(ctx context.Context
 			newSecret := &corev1.Secret{}
 			SourceSecret := &corev1.Secret{}
 			if err := r.Get(ctx, client.ObjectKey{Namespace: e.ObjectNew.GetNamespace(), Name: e.ObjectNew.GetName()}, newSecret); err != nil {
-				logctx.Error(err, "Failed to get new secret", "Namespace", e.ObjectNew.GetNamespace(), "Name" e.ObjectNew.GetName() )
+				logctx.Error(err, "Failed to get new secret", "Namespace", e.ObjectNew.GetNamespace(), "Name", e.ObjectNew.GetName())
 				return false
 			}
 			if err := r.Get(ctx, client.ObjectKey{Namespace: sourceNamespace, Name: e.ObjectNew.GetName()}, sourceSecret); err != nil {
-				logctx.Error(err, "Failed to get source secret", "Namespace", sourceNamespace, "Name" e.ObjectNew.GetName() )
+				logctx.Error(err, "Failed to get source secret", "Namespace", sourceNamespace, "Name", e.ObjectNew.GetName())
 				return false
 			}
 
